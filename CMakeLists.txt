@@ -35,7 +35,7 @@ set(CMAKE_CXX_COMPILER ${AVRCPP})
 set(CMAKE_C_COMPILER   ${AVRC})
 set(CMAKE_ASM_COMPILER ${AVRC})
 
-project (eliza C CXX ASM)
+project (ubirch C CXX ASM)
 
 # Important project paths
 set(BASE_PATH    "${${PROJECT_NAME}_SOURCE_DIR}")
@@ -53,23 +53,6 @@ file(GLOB SRC_FILES "${SRC_PATH}/*.cpp"
                     "${SRC_PATH}/*.sx"
                     "${SRC_PATH}/*.asm")
 
-set(LIB_SRC_FILES)
-set(LIB_INC_PATH)
-file(GLOB LIBRARIES "${LIB_DIR_PATH}/*")
-foreach(subdir ${LIBRARIES})
-    file(GLOB lib_files "${subdir}/*.cpp"
-                        "${subdir}/*.cc"
-                        "${subdir}/*.c"
-                        "${subdir}/*.cxx"
-                        "${subdir}/*.S"
-                        "${subdir}/*.s"
-                        "${subdir}/*.sx"
-                        "${subdir}/*.asm")
-    if(IS_DIRECTORY ${subdir})
-        list(APPEND LIB_INC_PATH  "${subdir}")
-    endif()
-    list(APPEND LIB_SRC_FILES "${lib_files}")
-endforeach()
 
 # Compiler flags
 set(CSTANDARD "-std=gnu99")
@@ -85,12 +68,23 @@ set(CXXFLAGS "${CMCU} ${CDEBUG} ${CDEFS} ${COPT} ${CTUNING} -fno-threadsafe-stat
 
 set(CMAKE_C_FLAGS   "${CFLAGS}")
 set(CMAKE_CXX_FLAGS "${CXXFLAGS}")
-set(CMAKE_ASM_FLAGS   "${CFLAGS}")
+set(CMAKE_ASM_FLAGS   "${SSCFLAGS}")
+
+set(PROJECT_LIBS)
+file(GLOB LIB_DIRS "${LIB_DIR_PATH}/*")
+foreach(subdir ${LIB_DIRS})
+    add_subdirectory(${subdir})
+    if(IS_DIRECTORY ${subdir})
+       get_filename_component(NAME ${subdir} NAME)
+       list(APPEND PROJECT_LIBS ${NAME})
+    endif()
+endforeach()
 
 # Project setup
 include_directories(${INC_PATH} ${LIB_INC_PATH})
-add_executable(${PROJECT_NAME} ${SRC_FILES} ${LIB_SRC_FILES})
+add_executable(${PROJECT_NAME} ${SRC_FILES})
 set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME "${PROJECT_NAME}.elf")
+target_link_libraries (${PROJECT_NAME} LINK_PUBLIC ${PROJECT_LIBS})
 
 # Compiling targets
 add_custom_target(strip  ALL ${AVRSTRIP} "${PROJECT_NAME}.elf" DEPENDS ${PROJECT_NAME})

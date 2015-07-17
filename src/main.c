@@ -32,6 +32,8 @@
 FILE uart_str = FDEV_SETUP_STREAM(uart_putchar, uart_getchar, _FDEV_SETUP_RW);
 
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wmissing-noreturn"
 int main(int argc, char **argv) {
     // disable watchdog (pin 6 output)
     DDRD = DDRD | 0b01000000;
@@ -68,3 +70,4 @@ int main(int argc, char **argv) {
         }
     }
 }
+#pragma clang diagnostic pop

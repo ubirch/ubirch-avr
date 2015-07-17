@@ -10,6 +10,20 @@ something about [PROGMEM](http://www.fourwalledcubicle.com/AVRArticles.php).
 
 ## to load the code onto the board 
 
+### Prerequisits
+
+Install the toolchain:
+
+For MacOS X the simplest way to get the toolchain is [homebew](http://brew.sh/):
+
+```
+brew tap larsimmisch/avr
+brew install avr-binutils avr-gcc avr-libc avrdude
+brew install cmake
+```
+
+### Make
+
 1. Edit CMakeLists.txt and set PROG_TYPE and PROG_DEV to your flash programmer and device.
 2. follow the following procedure:
 

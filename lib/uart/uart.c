@@ -46,7 +46,7 @@ int uart_putchar(char c, FILE *stream) {
     if (c == '\n')
         uart_putchar('\r', stream);
     loop_until_bit_is_set(UCSR0A, UDRE0);
-    UDR0 = c;
+    UDR0 = (uint8_t) c;
 
     return 0;
 }
@@ -86,7 +86,7 @@ int uart_putchar(char c, FILE *stream) {
  */
 int
 uart_getchar(FILE *stream) {
-    uint8_t c;
+    char c;
     char *cp, *cp2;
     static char b[RX_BUFSIZE];
     static char *rxp;
@@ -98,7 +98,7 @@ uart_getchar(FILE *stream) {
                 return _FDEV_EOF;
             if (UCSR0A & _BV(DOR0))
                 return _FDEV_ERR;
-            c = UDR0;
+            c = (char) UDR0;
             /* behaviour similar to Unix stty ICRNL */
             if (c == '\r')
                 c = '\n';
@@ -158,6 +158,8 @@ uart_getchar(FILE *stream) {
                         uart_putchar('\b', stream);
                         cp--;
                     }
+                    break;
+                default:
                     break;
             }
         }

@@ -69,7 +69,7 @@ endforeach()
 # Compiler flags
 set(CSTANDARD "-std=gnu99")
 set(CDEBUG    "-gstabs -g -ggdb")
-set(CWARN     "-Wall -Wstrict-prototypes -Wl,--gc-sections -Wl,--relax")
+set(CWARN     "-Wall -Wstrict-prototypes -Wno-unknown-pragmas -Wl,--gc-sections -Wl,--relax")
 set(CTUNING   "-funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums -ffunction-sections -fdata-sections")
 set(COPT      "-Os -lm -lprintf_flt")
 set(CMCU      "-mmcu=${MCU}")

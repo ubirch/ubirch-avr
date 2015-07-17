@@ -29,8 +29,8 @@
 #include <avr/wdt.h>
 #include <util/delay.h>
 
+// set up the uart i/o as a stream, so wen can use it for stdio
 FILE uart_str = FDEV_SETUP_STREAM(uart_putchar, uart_getchar, _FDEV_SETUP_RW);
-
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wmissing-noreturn"
@@ -41,10 +41,13 @@ int main(int argc, char **argv) {
     wdt_disable();
 
     uart_init();
+
+    // this makes the standard io functions work on the serial port
     stdout = stdin = &uart_str;
 
+    // wait a bit for the user to become ready
     for (uint8_t i = 0xff; i > 0; i--) {
-        if (i % 2) putchar('.');
+        if (i % 4) putchar('.');
         _delay_ms(10);
     }
     printf("\n");
@@ -55,17 +58,24 @@ int main(int argc, char **argv) {
         print_generic_response();
 
         for (; ;) {
+            // enable the LED
             PORTB |= _BV(PORTB5);
 
+            // promt the user, read text from stdin and replace the newline with a \0
             printf(": ");
             fgets(input, sizeof(input), stdin);
             input[strcspn(input, "\n")] = 0;
 
+            // disable the LED
             PORTB ^= _BV(PORTB5);
+
+            // if we read bye, lets exit (not really as we loop and start over)
             if (strncmp(input, "bye", MAX_INPUT_BUFFER_SIZE) == 0) {
                 puts("Your bill will be mailed to you.");
                 break;
             }
+
+            // lets respond using the eliza functions
             respond(input);
         }
     }

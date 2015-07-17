@@ -33,7 +33,7 @@ cd examples/board_simduino
 ./obj-x86_64-apple-darwin14.4.0/simduino.elf 
 ```
 
-Now the simulator is running with correct bootloader code and it tells us the tty we can
+Now the simulator is running with the Arduino bootloader code and it tells us the tty we can
 use to connect and flash code on to the virtual device:
 
 ```
@@ -45,7 +45,7 @@ uart_pty_init bridge on port *** /dev/ttys005 ***
 uart_pty_connect: /tmp/simavr-uart0 now points to /dev/ttys005
 ```
 
-Edit ```CMakeLists.txt``` to set the corrct PROG_DEV and then just follow the instructions above.
+Edit ```CMakeLists.txt``` to set the correct PROG_DEV and then just follow the instructions above.
 
 
 

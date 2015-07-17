@@ -20,6 +20,37 @@ cmake ..
 make flash monitor
 ```
 
+## using simavr to run code
+
+To run code inside of [SIMAVR](https://github.com/buserror/simavr), just download and install simavr as well as the simduino
+example:
+
+```
+git@github.com:buserror/simavr.git
+cd simavr
+make
+cd examples/board_simduino
+./obj-x86_64-apple-darwin14.4.0/simduino.elf 
+```
+
+Now the simulator is running with the Arduino bootloader code and it tells us the tty we can
+use to connect and flash code on to the virtual device:
+
+```
+read_ihex_chunks: ATmegaBOOT_168_atmega328.ihex, unsupported check type 03
+atmega328p booloader 0x07800: 1950 bytes
+avr_interrupt_init
+avr_special_init
+uart_pty_init bridge on port *** /dev/ttys005 ***
+uart_pty_connect: /tmp/simavr-uart0 now points to /dev/ttys005
+```
+
+Edit ```CMakeLists.txt``` to set the correct PROG_DEV and then just follow the instructions above.
+
+
+
+
+
 Enjoy a little chat with Eliza!
 
 ## LICENSE

@@ -9,19 +9,24 @@ set(PROG_DEV /tmp/simavr-uart0)
 
 # Variables regarding the AVR chip
 set(MCU   atmega328p)
-set(F_CPU 16000000)
-set(BAUD  19200)
+set(F_CPU 16000000UL)
+set(BAUD  19200UL)
 add_definitions(-DF_CPU=${F_CPU})
 
+# only needed if we do floating point math and want to print floats with printf
+#set(EXTRA_LIBS "-lm -lprintf_flt")
+
+#=====================================================================================
+
 # program names
-set(AVRCPP   avr-g++)
-set(AVRC     avr-gcc)
-set(AVRSTRIP avr-strip)
-set(OBJCOPY  avr-objcopy)
-set(OBJDUMP  avr-objdump)
-set(AVRSIZE  avr-size)
-set(AVRDUDE  avrdude)
-set(MONITOR  screen)
+find_program(AVRCPP   avr-g++)
+find_program(AVRC     avr-gcc)
+find_program(AVRSTRIP avr-strip)
+find_program(OBJCOPY  avr-objcopy)
+find_program(OBJDUMP  avr-objdump)
+find_program(AVRSIZE  avr-size)
+find_program(AVRDUDE  avrdude)
+find_program(MONITOR  screen)
 
 # Sets the compiler
 # Needs to come before the project function
@@ -30,7 +35,7 @@ set(CMAKE_CXX_COMPILER ${AVRCPP})
 set(CMAKE_C_COMPILER   ${AVRC})
 set(CMAKE_ASM_COMPILER ${AVRC})
 
-project (eliza C ASM)
+project (eliza C CXX ASM)
 
 # Important project paths
 set(BASE_PATH    "${${PROJECT_NAME}_SOURCE_DIR}")
@@ -71,12 +76,12 @@ set(CSTANDARD "-std=gnu99")
 set(CDEBUG    "-gstabs -g -ggdb")
 set(CWARN     "-Wall -Wstrict-prototypes -Wno-unknown-pragmas -Wl,--gc-sections -Wl,--relax")
 set(CTUNING   "-funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums -ffunction-sections -fdata-sections")
-set(COPT      "-Os -lm -lprintf_flt")
+set(COPT      "-Os ${EXTRA_LIBS}")
 set(CMCU      "-mmcu=${MCU}")
 set(CDEFS     "-DF_CPU=${F_CPU} -DBAUD=${BAUD}")
 
 set(CFLAGS   "${CMCU} ${CDEBUG} ${CDEFS} ${COPT} ${CWARN} ${CSTANDARD} ${CTUNING}")
-set(CXXFLAGS "${CMCU} ${CDEBUG} ${CDEFS} ${COPT} ${CTUNING}")
+set(CXXFLAGS "${CMCU} ${CDEBUG} ${CDEFS} ${COPT} ${CTUNING} -fno-threadsafe-statics")
 
 set(CMAKE_C_FLAGS   "${CFLAGS}")
 set(CMAKE_CXX_FLAGS "${CXXFLAGS}")
@@ -88,11 +93,12 @@ add_executable(${PROJECT_NAME} ${SRC_FILES} ${LIB_SRC_FILES})
 set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME "${PROJECT_NAME}.elf")
 
 # Compiling targets
-add_custom_target(strip ALL     ${AVRSTRIP} "${PROJECT_NAME}.elf" DEPENDS ${PROJECT_NAME})
-add_custom_target(hex   ALL     ${OBJCOPY} -R .eeprom -O ihex "${PROJECT_NAME}.elf" "${PROJECT_NAME}.hex" DEPENDS strip)
-add_custom_target(eeprom        ${OBJCOPY} -j .eeprom --change-section-lma .eeprom=0 -O ihex "${PROJECT_NAME}.elf" "${PROJECT_NAME}.eeprom" DEPENDS strip)
+add_custom_target(strip  ALL ${AVRSTRIP} "${PROJECT_NAME}.elf" DEPENDS ${PROJECT_NAME})
+add_custom_target(hex    ALL ${OBJCOPY} -R .eeprom -O ihex "${PROJECT_NAME}.elf" "${PROJECT_NAME}.hex" DEPENDS strip)
+add_custom_target(eeprom     ${OBJCOPY} -j .eeprom --change-section-lma .eeprom=0 -O ihex "${PROJECT_NAME}.elf" "${PROJECT_NAME}.eeprom" DEPENDS strip)
+add_custom_target(size       ${AVRSIZE} --mcu=${MCU} -C --format=avr "${PROJECT_NAME}.elf" DEPENDS hex)
 
-add_custom_target(flash ${AVRDUDE} -q -D -c ${PROG_TYPE} -P ${PROG_DEV} -p ${MCU} -U flash:w:${PROJECT_NAME}.hex DEPENDS hex)
-add_custom_target(monitor ${MONITOR} ${PROG_DEV} ${BAUD} DEPENDS hex)
+add_custom_target(flash      ${AVRDUDE} -q -D -c ${PROG_TYPE} -P ${PROG_DEV} -p ${MCU} -U flash:w:${PROJECT_NAME}.hex DEPENDS size)
+add_custom_target(monitor    ${MONITOR} ${PROG_DEV} ${BAUD} DEPENDS hex)
 
 set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${PROJECT_NAME}.hex;${PROJECT_NAME}.eeprom;${PROJECT_NAME}.lst")

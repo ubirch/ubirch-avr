@@ -1,7 +1,11 @@
 cmake_minimum_required(VERSION 2.8)
 
+#set(PROG_TYPE arduino)
+#set(PROG_DEV /dev/cu.SLAB_USBtoUART)
+
+# simulator settings
 set(PROG_TYPE arduino)
-set(PROG_DEV /dev/cu.SLAB_USBtoUART)
+set(PROG_DEV /tmp/simavr-uart0)
 
 # Variables regarding the AVR chip
 set(MCU   atmega328p)

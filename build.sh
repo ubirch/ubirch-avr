@@ -2,4 +2,4 @@
 
 # this files helps bundling the build commands
 
-mkdir -p build && cd build && cmake .. && make
+mkdir -p build && cd build && cmake .. && make flash monitor

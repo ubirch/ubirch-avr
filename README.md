@@ -58,6 +58,20 @@ uart_pty_connect: /tmp/simavr-uart0 now points to /dev/ttys005
 
 Edit ```CMakeLists.txt``` to set the correct PROG_DEV and then just follow the instructions above.
 
+## Library Code
+
+### libeliza
+
+This is [code](http://cplus.about.com/library/downloads/projects/Eliza/Eliza.c.txt)
+I found online which I rewrote to work with the limited capacity of the atmega328p by
+moving most of the strings into [PROGMEM](http://www.fourwalledcubicle.com/AVRArticles.php).
+ 
+### libuart
+
+Basic communication with the board is done using the the UART. This library is basically
+the [demo code](http://www.nongnu.org/avr-libc/user-manual/group__stdiodemo.html) from
+the [avr-libc](http://www.nongnu.org/avr-libc/). 
+
 ## Main Targets
  
 There are a number of executables available under ```src```. These are described below: 

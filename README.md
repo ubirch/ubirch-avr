@@ -62,7 +62,7 @@ Edit ```CMakeLists.txt``` to set the correct PROG_DEV and then just follow the i
 
 ### libeliza
 
-This is [code](http://cplus.about.com/library/downloads/projects/Eliza/Eliza.c.txt)
+This is [code](https://github.com/itmm/eliza)
 I found online which I rewrote to work with the limited capacity of the atmega328p by
 moving most of the strings into [PROGMEM](http://www.fourwalledcubicle.com/AVRArticles.php).
  

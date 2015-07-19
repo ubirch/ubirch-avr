@@ -4,17 +4,17 @@
 cmake_minimum_required(VERSION 2.8)
 
 # set the programmer and the device to use (default is to use simavr)
-#set(PROG_TYPE arduino)
-#set(PROG_DEV /dev/cu.SLAB_USBtoUART)
+set(PROG_TYPE arduino)
+set(PROG_DEV /dev/cu.SLAB_USBtoUART)
 
 # simulator settings
-set(PROG_TYPE arduino)
-set(PROG_DEV /tmp/simavr-uart0)
+#set(PROG_TYPE arduino)
+#set(PROG_DEV /tmp/simavr-uart0)
 
 # necessary settings for the chip we use
 set(MCU   atmega328p)
-set(F_CPU 16000000UL)
-set(BAUD  19200UL)
+set(F_CPU 16000000)
+set(BAUD  115200)
 
 # only needed if we do floating point math and want to print floats with printf
 #set(EXTRA_LIBS "-lm -lprintf_flt")
@@ -54,7 +54,7 @@ set(CWARN     "-Wall -Wstrict-prototypes -Wno-unknown-pragmas -Wl,--gc-sections 
 set(CTUNING   "-funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums -ffunction-sections -fdata-sections")
 set(COPT      "-Os ${EXTRA_LIBS}")
 set(CMCU      "-mmcu=${MCU}")
-set(CDEFS     "-DF_CPU=${F_CPU} -DBAUD=${BAUD}")
+set(CDEFS     "-DF_CPU=${F_CPU}UL -DBAUD=${BAUD}UL")
 
 set(CFLAGS   "${CMCU} ${CDEBUG} ${CDEFS} ${COPT} ${CWARN} ${CSTANDARD} ${CTUNING}")
 set(CXXFLAGS "${CMCU} ${CDEBUG} ${CDEFS} ${COPT} ${CTUNING} -fno-threadsafe-statics")
@@ -77,16 +77,18 @@ function(add_executable_avr NAME)
         COMMAND ${OBJCOPY} -R .eeprom -O ihex "${NAME}.elf" "${NAME}.hex"
         COMMAND ${OBJCOPY} -j .eeprom --change-section-lma .eeprom=0 -O ihex "${NAME}.elf" "${NAME}.eeprom"
         COMMAND ${AVRSIZE} --mcu=${MCU} -C --format=avr "${NAME}.elf"
-        DEPENDS ${NAME}
-    )
+        DEPENDS ${NAME})
     add_custom_target(${NAME}-strip ALL DEPENDS ${NAME}.hex)
 
     # flash the produces binary
     add_custom_target(
         ${NAME}-flash
-        COMMAND ${AVRDUDE} -q -D -c ${PROG_TYPE} -P ${PROG_DEV} -p ${MCU} -U flash:w:${NAME}.hex
-        DEPENDS ${NAME}.hex
-    )
+        COMMAND ${AVRDUDE} -q -D -c ${PROG_TYPE} -P ${PROG_DEV} -b ${BAUD} -p ${MCU} -U flash:w:${NAME}.hex
+        DEPENDS ${NAME}.hex )
+    add_custom_target(
+        ${NAME}-monitor
+        COMMAND ${MONITOR} ${PROG_DEV} ${BAUD}
+        DEPENDS ${NAME}-flash)
 endfunction(add_executable_avr)
 
 add_custom_target(monitor ${MONITOR} ${PROG_DEV} ${BAUD})

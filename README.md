@@ -1,15 +1,9 @@
-# Eliza on the ubirch #1
+# ubirch #1 AVR lib
 
-This little program puts Eliza on the board. Why? Because I wanted to learn how to
-program the Arduino compatible board without the IDE using just the standard toolchain
-[avr-libc](http://www.nongnu.org/avr-libc/) and [cmake](http://www.cmake.org/).
+Contains little libs to work with AVR chip internals as well as to speak with peripherpherals.
 
-Another goal was to learn about how to set up the serial communication to work with
-the standard tools, like puts(), fgets(), printf(), etc. As a side effect I even learned
-something about [PROGMEM](http://www.fourwalledcubicle.com/AVRArticles.php).
-
-## to load the code onto the board 
-
+## Building
+ 
 ### Prerequisits
 
 Install the toolchain:
@@ -34,13 +28,16 @@ cmake ..
 make flash monitor
 ```
 
-## using simavr to run code
+> Unless you make significant changes to the CMakeLists.txt you only need to run ```make``` in
+> the build directory from now on.
+
+## SimAVR (testing code)
 
 To run code inside of [SIMAVR](https://github.com/buserror/simavr), just download and install simavr as well as the simduino
 example:
 
 ```
-git@github.com:buserror/simavr.git
+git clone git@github.com:buserror/simavr.git
 cd simavr
 make
 cd examples/board_simduino
@@ -61,11 +58,23 @@ uart_pty_connect: /tmp/simavr-uart0 now points to /dev/ttys005
 
 Edit ```CMakeLists.txt``` to set the correct PROG_DEV and then just follow the instructions above.
 
+## Main Targets
+ 
+There are a number of executables available under ```src```. These are described below: 
 
+### Eliza
 
+This little program puts Eliza on the board. Why? Because I wanted to learn how to
+program the Arduino compatible board without the IDE using just the standard toolchain
+[avr-libc](http://www.nongnu.org/avr-libc/) and [cmake](http://www.cmake.org/).
 
+Another goal was to learn about how to set up the serial communication to work with
+the standard tools, like puts(), fgets(), printf(), etc. As a side effect I even learned
+something about [PROGMEM](http://www.fourwalledcubicle.com/AVRArticles.php).
 
 Enjoy a little chat with Eliza!
+
+
 
 ## LICENSE
 

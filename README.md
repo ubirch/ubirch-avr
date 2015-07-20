@@ -25,8 +25,10 @@ brew install cmake
 mkdir build
 cd build
 cmake ..
-make flash monitor
+make eliza-flash monitor
 ```
+
+To flash a target use the directory name with added -flash (twitest-flash for the TWI example).
 
 > Unless you make significant changes to the CMakeLists.txt you only need to run ```make``` in
 > the build directory from now on.

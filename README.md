@@ -72,6 +72,12 @@ Basic communication with the board is done using the the UART. This library is b
 the [demo code](http://www.nongnu.org/avr-libc/user-manual/group__stdiodemo.html) from
 the [avr-libc](http://www.nongnu.org/avr-libc/). 
 
+### libi2c
+
+Library to access the [TWI](http://www.nongnu.org/avr-libc/user-manual/group__twi__demo.html)
+(two wire interface, or i2c) interface in the AVR. Has the most basic functions to initialize
+the bus and send and receive data.
+
 ## Main Targets
  
 There are a number of executables available under ```src```. These are described below: 
@@ -87,6 +93,16 @@ the standard tools, like puts(), fgets(), printf(), etc. As a side effect I even
 something about [PROGMEM](http://www.fourwalledcubicle.com/AVRArticles.php).
 
 Enjoy a little chat with Eliza!
+
+### TWI Test
+
+The TWI (two wire interface, also known as i2c) is a short test program that scans the i2c
+bus for devices and outputs the device id.
+
+### RGB Sensor Example
+
+Using the i2c library, this example talks to an [ISL29125 RGB sensor](https://www.sparkfun.com/products/12829)
+and reads the data via i2c and displays the results on the serial console.
 
 
 

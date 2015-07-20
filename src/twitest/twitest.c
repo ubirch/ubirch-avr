@@ -18,32 +18,21 @@
  * limitations under the License.
  */
 
-#include <util/delay.h>
-#include <avr/wdt.h>
-#include <util/twi.h>
 #include "uart.h"
+#include "uart_stdio.h"
 #include "i2c.h"
+#include "dbg_utils.h"
+
+#include <util/delay.h>
+
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wmissing-noreturn"
-FILE uart_str = FDEV_SETUP_STREAM(uart_putchar, uart_getchar, _FDEV_SETUP_RW);
-
-char buf[8] = "00000000";
-
-char *itobs(uint8_t n) {
-    for (uint8_t i = 0; i < 7; i++) {
-        uint8_t x = (n >> i) & 1;
-        *(buf + i) = (char) (x ? '1' : '0');
-    }
-    return buf;
-}
-
 int main(void) {
+    UART_INIT_STDIO();
+
     // enable watchdog (pin 6 output)
     DDRD &= ~_BV(PIND6);
-
-    uart_init();
-    stdout = stdin = &uart_str;
 
     // blink a few times before we start
     DDRB |= _BV(PINB5);
@@ -72,7 +61,7 @@ int main(void) {
         i2c_write(address << 1);
         printf("A");
         if (i2c_status() == I2C_STATUS_SLAW_ACK)
-            printf("\rFOUND DEVICE: 0x%02x 0b%s\n", address, itobs(address));
+            printf("\rFOUND DEVICE: 0x%02x 0b%s\n", address, bits(address));
         i2c_stop();
         printf(">");
     }

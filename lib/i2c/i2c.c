@@ -18,24 +18,22 @@
  * limitations under the License.
  */
 #include "i2c.h"
-
-#ifdef DEBUG
-#define DBG_MSG(...) printf(__VA_ARGS__)
-#else
-#define DBG_MSG(...)
-#endif
+#include "dbg_utils.h"
 
 void i2c_init(void) {
+    DBG_MSG("->i2c_init()\n");
     DDRC |= _BV(PINC4) | _BV(PINC5);
     PORTC |= _BV(PINC4) | _BV(PINC5);
 
     // reset status register
     TWSR = 0x00;
-    // set speed
+    // set speed (TODO: make speed selectable)
     TWBR = ((((F_CPU / 400000UL) / 1) - 16) / 2);
     DBG_MSG("TWBR = 0x%02x\n", TWBR);
     // reset TWI register
     TWCR = 0x00;
+
+    DBG_MSG("<-i2c_init()\n");
 }
 
 uint8_t i2c_status(void) {
@@ -50,7 +48,10 @@ void i2c_start(void) {
 }
 
 void i2c_stop(void) {
+    DBG_MSG("->i2c_stop()\n");
     TWCR = _BV(TWINT) | _BV(TWSTO) | _BV(TWEN);
+    while (TWCR & _BV(TWSTO));
+    DBG_MSG("<-i2c_stop()\n");
 }
 
 void i2c_write(uint8_t b) {
@@ -62,8 +63,10 @@ void i2c_write(uint8_t b) {
 }
 
 uint8_t i2c_read(bool ack) {
+    DBG_MSG("->i2c_read(%d)\n", ack);
     TWCR = _BV(TWINT) | _BV(TWEN);
     if (ack) TWCR |= _BV(TWEN);
     while (!(TWCR & _BV(TWINT)));
+    DBG_MSG("<-i2c_read(%d)=0x%02x: 0x%02x\n", ack, TWDR, TW_STATUS);
     return TWDR;
 }

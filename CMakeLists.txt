@@ -85,10 +85,6 @@ function(add_executable_avr NAME)
         ${NAME}-flash
         COMMAND ${AVRDUDE} -q -D -c ${PROG_TYPE} -P ${PROG_DEV} -b ${BAUD} -p ${MCU} -U flash:w:${NAME}.hex
         DEPENDS ${NAME}.hex )
-    add_custom_target(
-        ${NAME}-monitor
-        COMMAND ${MONITOR} ${PROG_DEV} ${BAUD}
-        DEPENDS ${NAME}-flash)
 endfunction(add_executable_avr)
 
 add_custom_target(monitor ${MONITOR} ${PROG_DEV} ${BAUD})

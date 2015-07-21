@@ -24,11 +24,11 @@
 
 #include <stdint.h>
 
-#ifdef DEBUG
+#ifndef NDEBUG
 #  include <stdio.h>
-#define DBG_MSG(...) printf(__VA_ARGS__)
-#  else
-#define DBG_MSG(...)
+#  define DBG_MSG(...) printf(__VA_ARGS__)
+#else
+#  define DBG_MSG(...)
 #endif
 
 char *bits(uint8_t n);

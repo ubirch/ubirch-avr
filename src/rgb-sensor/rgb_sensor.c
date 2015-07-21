@@ -25,6 +25,7 @@
 #include "isl29125.h"
 #include "dbg_utils.h"
 
+#include <math.h>
 #include <util/delay.h>
 
 #define RGB_SENSOR_ADDRESS 0x44
@@ -113,7 +114,9 @@ uint16_t read16(uint8_t address, uint8_t reg) {
     i2c_write((address << 1) | 0x01);
     status(I2C_STATUS_SLAR_ACK, "address error");
     // ACK when more data expected, NACK for last byte
-    uint16_t r = i2c_read(true) | (i2c_read(false) << 8);
+    uint16_t r = i2c_read(true);
+    status(I2C_STATUS_RCVD_DATA_NACK, "data receive error");
+    r |= (i2c_read(false) << 8);
     status(I2C_STATUS_RCVD_DATA_NACK, "data receive error");
     i2c_stop();
 
@@ -156,7 +159,7 @@ int main(void) {
     write(RGB_SENSOR_ADDRESS, ISL_R_COLOR_MODE, mode);
 
     // set filtering mode
-    uint8_t filtering = ISL_FILTER_IR_NONE;
+    uint8_t filtering = ISL_FILTER_IR_MAX;
     printf("setting filter: %s\n", bits(filtering));
     write(RGB_SENSOR_ADDRESS, ISL_R_FILTERING, filtering);
 
@@ -176,11 +179,35 @@ int main(void) {
         // in progress. the actual r,g,b values are always available from the last cycle
         while (!(read(RGB_SENSOR_ADDRESS, ISL_R_STATUS) & (ISL_STATUS_ADC_DONE))) putchar('%');
         puts("");
+
+        // this is how the SparkFun code reads the RGB values (just the lower byte)
+        printf("old  : ");
+        unsigned int red_old = read16(RGB_SENSOR_ADDRESS, ISL_R_RED_L);
+        unsigned int green_old = read16(RGB_SENSOR_ADDRESS, ISL_R_GREEN_L);
+        unsigned int blue_old = read16(RGB_SENSOR_ADDRESS, ISL_R_BLUE_L);
+        printf("0x%04x%04x%04x rgb24(%u,%u,%u)\n", red_old, green_old, blue_old, red_old, green_old, blue_old);
+
+        // here we convert them as in the FEWL sensor
+        printf("old  : ");
+        unsigned int red_old_x = (unsigned int) sqrt(sqrt(red_old * red_old / 1));
+        unsigned int green_old_x = (unsigned int) sqrt(sqrt(green_old * green_old / 1));
+        unsigned int blue_old_x = (unsigned int) sqrt(sqrt(blue_old * blue_old / 1));
+        printf("0x%02x%02x%02x rgb24(%u,%u,%u)\n", red_old_x, green_old_x, blue_old_x, red_old_x, green_old_x,
+               blue_old_x);
+
         // read the full 36 or 48 bit color
+        printf("48bit: ");
         uint16_t red = read(RGB_SENSOR_ADDRESS, ISL_R_RED_L) | (read16(RGB_SENSOR_ADDRESS, ISL_R_RED_H) << 8);
         uint16_t green = read(RGB_SENSOR_ADDRESS, ISL_R_GREEN_L) | (read16(RGB_SENSOR_ADDRESS, ISL_R_GREEN_H) << 8);
         uint16_t blue = read(RGB_SENSOR_ADDRESS, ISL_R_BLUE_L) | (read16(RGB_SENSOR_ADDRESS, ISL_R_BLUE_H) << 8);
-        printf("rgb(%d,%d,%d) / RGB(0x%04x,0x%04x,0x%04x)\n", red, green, blue, red, green, blue);
+        printf("0x%04x%04x%04x rgb48(%u,%u,%u)\n", red, green, blue, red, green, blue);
+
+        printf("24bit: ");
+        // adjust with gamma correction 2.2 (not scientific!)
+        unsigned int red8 = (unsigned int) (255 * pow(red / 65535.0, 1 / 2.2));
+        unsigned int green8 = (unsigned int) (255 * pow(green / 65535.0, 1 / 2.2));
+        unsigned int blue8 = (unsigned int) (255 * pow(blue / 65535.0, 1 / 2.2));
+        printf("0x%02x%02x%02x rgb24(%u,%u,%u)\n", red8, green8, blue8, red8, green8, blue8);
         prompt("next? ");
     }
 }

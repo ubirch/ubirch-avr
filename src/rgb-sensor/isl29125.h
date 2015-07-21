@@ -45,10 +45,10 @@
 #define ISL_MODE_GB         0b000111
 
 // the lux selection also indicates sensible bit width (more bits offer more lux)
-#define ISL_MODE_375LUX     0b000000 // B3 0
-#define ISL_MODE_10KLUX     0b001000 // B3 1 default is 375 lux
-#define ISL_MODE_16BIT      0b000000 // B4 0 16 bit operation
+#define ISL_MODE_375LUX     0b000000 // B3 0 default is 375 lux
+#define ISL_MODE_10KLUX     0b001000 // B3 1
 #define ISL_MODE_12BIT      0b010000 // B4 1 12 bit operation
+#define ISL_MODE_16BIT      0b000000 // B4 0 16 bit operation
 #define ISL_MODE_INT_TRIG   0b100000 // set INT pin to trigger sampling
 
 // ISL_R_FILTERING values (the actual filter values can be beweel 0x00 (NONE) and 0x3F (MAX)

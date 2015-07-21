@@ -132,6 +132,11 @@ int main(void) {
     // enable LED (pin 5 output)
     DDRB |= _BV(PINB5);
 
+    // just in case we use I2C2 (second port)
+    // enable power (pin 3 output + HIGH)
+    DDRB |= _BV(PINB3);
+    PORTB |= _BV(PORTB3);
+
     UART_INIT_STDIO();
 
     blink();

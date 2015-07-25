@@ -61,7 +61,7 @@ int main(void) {
         i2c_write(address << 1);
         printf("A");
         if (i2c_status() == I2C_STATUS_SLAW_ACK) {
-            printf("\rFOUND DEVICE: 0x%02x 0b\n", address);
+            printf("\rFOUND DEVICE: 0x%02x 0b", address);
             print_bits(sizeof address, &address);
         }
         i2c_stop();

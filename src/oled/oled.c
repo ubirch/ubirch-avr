@@ -1,5 +1,5 @@
 /**
- * oled example
+ * oled example + rgb display
  *
  * data sheet for this display:
  * http://www.buydisplay.com/download/manual/ER-OLED0.66-1_Series_Datasheet.pdf
@@ -28,8 +28,8 @@
 #include "i2c.h"
 
 #include <util/delay.h>
-#include <dbg_utils.h>
 #include <uart_stdio.h>
+#include <isl29125.h>
 
 static const uint8_t OLED_DEVICE_ADDRESS = 0x3d;
 
@@ -54,7 +54,7 @@ void blink(void) {
     puts("");
 }
 
-void isl_reset(void) {
+void oled_reset(void) {
     // Reset the display
     DDRB |= _BV(PINB1);
     PORTB |= _BV(PORTB1); // RST Pin LOW
@@ -64,7 +64,7 @@ void isl_reset(void) {
     PORTB |= _BV(PORTB1); // RST pin LOW
 }
 
-void cmd(uint8_t data) {
+void oled_cmd(uint8_t data) {
     i2c_start();
     i2c_write(OLED_DEVICE_ADDRESS << 1);
     i2c_assert(I2C_STATUS_SLAW_ACK, "address error");
@@ -75,7 +75,7 @@ void cmd(uint8_t data) {
     i2c_stop();
 }
 
-void data(uint8_t data) {
+void oled_data(uint8_t data) {
     i2c_start();
     i2c_write(OLED_DEVICE_ADDRESS << 1);
     i2c_assert(I2C_STATUS_SLAW_ACK, "address error");
@@ -86,62 +86,18 @@ void data(uint8_t data) {
     i2c_stop();
 }
 
-/**
- * I2C read a byte.
- */
-uint8_t read(uint8_t address, uint8_t reg) {
-    i2c_start();
-    i2c_write(address << 1);
-    i2c_assert(I2C_STATUS_SLAW_ACK, "address error");
-    i2c_write(reg);
-    i2c_assert(I2C_STATUS_DATA_ACK, "device-id error");
-
-    i2c_start();
-    i2c_write((address << 1) | 0x01);
-    i2c_assert(I2C_STATUS_SLAR_ACK, "address error");
-    uint8_t r = i2c_read(false);
-    i2c_assert(I2C_STATUS_RCVD_DATA_NACK, "data receive error");
-    i2c_stop();
-
-    return r;
-}
-
-
-/**
- * I2C read an int (16bit)
- */
-uint16_t read16(uint8_t address, uint8_t reg) {
-    i2c_start();
-    i2c_write(address << 1);
-    i2c_assert(I2C_STATUS_SLAW_ACK, "address error");
-    i2c_write(reg);
-    i2c_assert(I2C_STATUS_DATA_ACK, "device-id error");
-
-    i2c_start();
-    i2c_write((address << 1) | 0x01);
-    i2c_assert(I2C_STATUS_SLAR_ACK, "address error");
-    // ACK when more data expected, NACK for last byte
-    uint16_t r = i2c_read(true);
-    i2c_assert(I2C_STATUS_RCVD_DATA_NACK, "data receive error");
-    r |= (i2c_read(false) << 8);
-    i2c_assert(I2C_STATUS_RCVD_DATA_NACK, "data receive error");
-    i2c_stop();
-
-    return r;
-}
-
 void clear(void) {
-    cmd(0x21);
-    cmd(0);
-    cmd(127);
+    oled_cmd(0x21);
+    oled_cmd(0);
+    oled_cmd(127);
 
-    cmd(0x22);
-    cmd(0);
-    cmd(7);
+    oled_cmd(0x22);
+    oled_cmd(0);
+    oled_cmd(7);
 
     for (uint8_t page = 0; page < 8; page++) {
-        cmd(0xb0 | page);
-        cmd(0x00);
+        oled_cmd(0xb0 | page);
+        oled_cmd(0x00);
         i2c_start();
         i2c_write(OLED_DEVICE_ADDRESS << 1);
         i2c_write(0x40);
@@ -158,114 +114,95 @@ int main(void) {
 
     // disable watchdog (pin 6 output)
     DDRD |= _BV(PIND6);
-
+    DDRB |= _BV(PINB3);
+    PORTB |= _BV(PORTB3);
 
 //    blink();
 //    prompt("press enter to start: ");
 
-    // reset the device
-    isl_reset();
-
     i2c_init(I2C_SPEED_400KHZ);
+
+    oled_reset();
+
+    // RGB sensor setup
+    isl_reset();
+    isl_set(ISL_R_COLOR_MODE, ISL_MODE_RGB | ISL_MODE_10KLUX | ISL_MODE_16BIT);
+    isl_set(ISL_R_FILTERING, ISL_FILTER_IR_MAX);
+    isl_set(ISL_R_INTERRUPT, ISL_INT_ON_THRSLD);
 
     _delay_ms(100); // wait for the display to come online
 
     // software configuration according to specs
-    cmd(OLED_DISPLAY_OFF);
-    cmd(OLED_CLOCK_DIV_FREQ);
-    cmd(0b100000); // 0x80: 1000 (freq) 00 (divider)
-    cmd(OLED_MULTIPLEX_RATIO);
-    cmd(0x2F);
-    cmd(OLED_DISPLAY_OFFSET);
-    cmd(0x00);
-    cmd(OLED_START_LINE | 0x00);
-    cmd(OLED_CHARGE_PUMP);
-    cmd(0x14);
-    cmd(OLED_SCAN_REVERSE);
-    cmd(OLED_SEGMENT_REMAP1);
-    cmd(OLED_COM_PIN_CONFIG);
-    cmd(0x12);
-    cmd(OLED_CONTRAST);
-    cmd(0xCF);
-    cmd(OLED_PRECHARGE_PERIOD);
-    cmd(0x22);
-    cmd(OLED_VCOM_DESELECT);
-    cmd(0x00);
-    cmd(OLED_DISPLAY_RESUME);
-    cmd(OLED_DISPLAY_NORMAL);
+    oled_cmd(OLED_DISPLAY_OFF);
+    oled_cmd(OLED_CLOCK_DIV_FREQ);
+    oled_cmd(0b100000); // 0x80: 1000 (freq) 00 (divider)
+    oled_cmd(OLED_MULTIPLEX_RATIO);
+    oled_cmd(0x2F);
+    oled_cmd(OLED_DISPLAY_OFFSET);
+    oled_cmd(0x00);
+    oled_cmd(OLED_START_LINE | 0x00);
+    oled_cmd(OLED_CHARGE_PUMP);
+    oled_cmd(0x14);
+    oled_cmd(OLED_SCAN_REVERSE);
+    oled_cmd(OLED_SEGMENT_REMAP1);
+    oled_cmd(OLED_COM_PIN_CONFIG);
+    oled_cmd(0x12);
+    oled_cmd(OLED_CONTRAST);
+    oled_cmd(0xCF);
+    oled_cmd(OLED_PRECHARGE_PERIOD);
+    oled_cmd(0x22);
+    oled_cmd(OLED_VCOM_DESELECT);
+    oled_cmd(0x00);
+    oled_cmd(OLED_DISPLAY_RESUME);
+    oled_cmd(OLED_DISPLAY_NORMAL);
 
-    cmd(OLED_ADDRESSING_MODE);
-    cmd(OLED_ADDR_MODE_PAGE);
+    oled_cmd(OLED_ADDRESSING_MODE);
+    oled_cmd(OLED_ADDR_MODE_PAGE);
 
     clear();
 
-    cmd(OLED_DISPLAY_ON);
+    oled_cmd(OLED_DISPLAY_ON);
 
 
-    cmd(0x21);
-    cmd(32);
-    cmd(64 + 32 - 1);
+    // set drawing area (rows and pages)
+    oled_cmd(0x21);
+    oled_cmd(32);
+    oled_cmd(64 + 32 - 1);
 
-    cmd(0x22);
-    cmd(0);
-    cmd(48 / 8 - 1);
+    oled_cmd(0x22);
+    oled_cmd(0);
+    oled_cmd(48 / 8 - 1);
 
-    for (uint8_t page = 0; page < 3; page += 1) {
-        cmd(OLED_PAGE_ADDR_START | page);
-        cmd(0x12);
-        cmd(0x00);
-
-        i2c_start();
-        i2c_write(OLED_DEVICE_ADDRESS << 1);
-        i2c_assert(I2C_STATUS_SLAW_ACK, "address error");
-        i2c_write(0x40);
-        i2c_assert(I2C_STATUS_DATA_ACK, "reg error");
-        i2c_write(0b11111111);
-        for (uint8_t column = 1; column < 63; column++) {
-            i2c_write(0b10111101);
-            i2c_assert(I2C_STATUS_DATA_ACK, "address error");
-        }
-        i2c_write(0b11111111);
-        i2c_stop();
-    }
-
-//    cmd(OLED_SCROLL_DIAG_RIGHT);
-//    cmd(0x00);
-//    cmd(0b00000111);
-//    cmd(0b00000111);
-//    cmd(0b00000111);
-//    cmd(0b00000001);
-//    cmd(OLED_SCROLL_START);
-
-    prompt("?");
-
-//    clear(ALL);
-//
-
-    uint8_t state = OLED_DISPLAY_NORMAL;
-    uint8_t x = 0x00;
     while (true) {
-        if (state == OLED_DISPLAY_NORMAL) {
-            cmd(OLED_DISPLAY_INVERSE);
-            state = OLED_DISPLAY_INVERSE;
-        } else {
-            cmd(OLED_DISPLAY_NORMAL);
-            state = OLED_DISPLAY_NORMAL;
+        // read RGB values, convert the 0-255 into 0-64
+        rgb24 rgb = isl_read_rgb24(1);
+        double colors[3] = {rgb.red / 2, rgb.green / 2, rgb.blue / 2};
+        //printf("RGB: %04x%04x%04x (%d, %d, %d)\n", rgb.red, rgb.green, rgb.blue,
+        //       (uint8_t) colors[0], (uint8_t) colors[1], (uint8_t) colors[2]);
+
+        // visualize the RGB levels using three gauges
+        for (uint8_t page = 0; page < 3; page += 1) {
+            oled_cmd(OLED_PAGE_ADDR_START | page);
+            oled_cmd(0x12);
+            oled_cmd(0x00);
+
+            i2c_start();
+            i2c_write(OLED_DEVICE_ADDRESS << 1);
+            i2c_assert(I2C_STATUS_SLAW_ACK, "address error");
+            i2c_write(0x40);
+            i2c_assert(I2C_STATUS_DATA_ACK, "reg error");
+            i2c_write(0b01111110);
+            for (uint8_t column = 1; column < 63; column++) {
+                if (colors[page] < column) i2c_write(0b01000010);
+                else i2c_write(0b01011010);
+                i2c_assert(I2C_STATUS_DATA_ACK, "address error");
+            }
+            i2c_write(0b01111110);
+            i2c_stop();
+
+            _delay_ms(50);
         }
-
-        cmd(OLED_PAGE_ADDR_START | x++);
-        cmd(0x12);
-        cmd(0x00);
-
-        _delay_ms(500);
-    };
-
-    while (1) {
-        PORTB ^= _BV(PORTB5);
-        _delay_ms(250);
-    };
-
-
+    }
 }
 
 #pragma clang diagnostic pop

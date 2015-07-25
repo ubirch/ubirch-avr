@@ -103,6 +103,7 @@
 #define ISL_STATUS_RED      0b100000 // red being converted
 #define ISL_STATUS_BLUE     0b110000 // blue being converted
 
+#define COLOR_16BIT 65535.0
 // 48 bit color value (the maximum available), also used for 12 bit color reads
 typedef struct RGB48 {
     uint16_t red;

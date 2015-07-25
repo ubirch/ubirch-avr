@@ -1,11 +1,8 @@
 #=====================================================================================
 # ubirch #1 cmake configuration
 #=====================================================================================
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.2)
 
-# set the programmer and the device to use (default is to use simavr)
-set(PROG_TYPE arduino)
-set(PROG_DEV /dev/cu.SLAB_USBtoUART)
 
 # simulator settings
 #set(PROG_TYPE arduino)
@@ -15,6 +12,12 @@ set(PROG_DEV /dev/cu.SLAB_USBtoUART)
 set(MCU   atmega328p)
 set(F_CPU 16000000)
 set(BAUD  115200)
+
+# set the programmer and the device to use (default is to use simavr)
+set(PROG_TYPE     arduino)
+set(PROG_DEV     /dev/cu.SLAB_USBtoUART)
+set(MONITOR      screen)
+set(MONITOR_ARGS ${PROG_DEV} ${BAUD})
 
 # only needed if we do floating point math and want to print floats with printf
 #set(EXTRA_LIBS "-lm -lprintf_flt")
@@ -31,7 +34,6 @@ find_program(OBJCOPY  avr-objcopy)
 find_program(OBJDUMP  avr-objdump)
 find_program(AVRSIZE  avr-size)
 find_program(AVRDUDE  avrdude)
-find_program(MONITOR  screen)
 
 # Sets the compiler
 # Needs to come before the project function
@@ -85,9 +87,11 @@ function(add_executable_avr NAME)
         ${NAME}-flash
         COMMAND ${AVRDUDE} -q -D -c ${PROG_TYPE} -P ${PROG_DEV} -b ${BAUD} -p ${MCU} -U flash:w:${NAME}.hex
         DEPENDS ${NAME}.hex )
+    add_custom_target(
+        ${NAME}-monitor
+        COMMAND ${MONITOR} ${MONITOR_ARGS})
 endfunction(add_executable_avr)
 
-add_custom_target(monitor ${MONITOR} ${PROG_DEV} ${BAUD})
 
 # add all the libraries as possible library dependencies
 set(PROJECT_LIBS)

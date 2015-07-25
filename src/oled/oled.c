@@ -1,7 +1,10 @@
 /**
  * oled example
  *
- * data sheet for the controller:
+ * data sheet for this display:
+ * http://www.buydisplay.com/download/manual/ER-OLED0.66-1_Series_Datasheet.pdf
+ *
+ * data sheet for the used controller:
  * https://www.adafruit.com/datasheets/SSD1306.pdf
  *
  * @author Matthias L. Jugel
@@ -51,49 +54,35 @@ void blink(void) {
     puts("");
 }
 
-void status(uint8_t expected, char *msg) {
-    uint8_t s = i2c_status();
-    if (s != expected) {
-        printf("i2c: status: 0x%02x (expected 0x%02x): %s\n", s, expected, msg);
-    }
-}
-
-void reset(void) {
+void isl_reset(void) {
     // Reset the display
     DDRB |= _BV(PINB1);
-    printf("DDRB=%s\n", bits(DDRB));
     PORTB |= _BV(PORTB1); // RST Pin LOW
-    printf("PORTB=%s\n", bits(PORTB));
     _delay_ms(10);
     PORTB &= ~_BV(PORTB1); // RST Pin HIGH
-    printf("PORTB=%s\n", bits(PORTB));
     _delay_ms(10);
     PORTB |= _BV(PORTB1); // RST pin LOW
-    printf("PORTB=%s\n", bits(PORTB));
 }
 
-void write(uint8_t address, uint8_t reg, uint8_t data) {
+void cmd(uint8_t data) {
     i2c_start();
-    i2c_write(address << 1);
-    status(I2C_STATUS_SLAW_ACK, "address error");
-    i2c_write(reg);
-    status(I2C_STATUS_DATA_ACK, "register error");
+    i2c_write(OLED_DEVICE_ADDRESS << 1);
+    i2c_assert(I2C_STATUS_SLAW_ACK, "address error");
+    i2c_write(0x00);
+    i2c_assert(I2C_STATUS_DATA_ACK, "register error");
     i2c_write(data);
-    status(I2C_STATUS_DATA_ACK, "value error");
+    i2c_assert(I2C_STATUS_DATA_ACK, "value error");
     i2c_stop();
 }
 
-void writen(uint8_t address, uint8_t reg, uint8_t data[], uint8_t len) {
+void data(uint8_t data) {
     i2c_start();
-    i2c_write(address << 1);
-    status(I2C_STATUS_SLAW_ACK, "address error");
-    for (uint8_t i = 0; i < len; i++) {
-        printf("sending 0x%02x\n", data[i]);
-        i2c_write(reg);
-        status(I2C_STATUS_DATA_ACK, "register error");
-        i2c_write(data[i]);
-        status(I2C_STATUS_DATA_ACK, "value error");
-    }
+    i2c_write(OLED_DEVICE_ADDRESS << 1);
+    i2c_assert(I2C_STATUS_SLAW_ACK, "address error");
+    i2c_write(0x40);
+    i2c_assert(I2C_STATUS_DATA_ACK, "register error");
+    i2c_write(data);
+    i2c_assert(I2C_STATUS_DATA_ACK, "value error");
     i2c_stop();
 }
 
@@ -103,15 +92,15 @@ void writen(uint8_t address, uint8_t reg, uint8_t data[], uint8_t len) {
 uint8_t read(uint8_t address, uint8_t reg) {
     i2c_start();
     i2c_write(address << 1);
-    status(I2C_STATUS_SLAW_ACK, "address error");
+    i2c_assert(I2C_STATUS_SLAW_ACK, "address error");
     i2c_write(reg);
-    status(I2C_STATUS_DATA_ACK, "device-id error");
+    i2c_assert(I2C_STATUS_DATA_ACK, "device-id error");
 
     i2c_start();
     i2c_write((address << 1) | 0x01);
-    status(I2C_STATUS_SLAR_ACK, "address error");
+    i2c_assert(I2C_STATUS_SLAR_ACK, "address error");
     uint8_t r = i2c_read(false);
-    status(I2C_STATUS_RCVD_DATA_NACK, "data receive error");
+    i2c_assert(I2C_STATUS_RCVD_DATA_NACK, "data receive error");
     i2c_stop();
 
     return r;
@@ -124,29 +113,41 @@ uint8_t read(uint8_t address, uint8_t reg) {
 uint16_t read16(uint8_t address, uint8_t reg) {
     i2c_start();
     i2c_write(address << 1);
-    status(I2C_STATUS_SLAW_ACK, "address error");
+    i2c_assert(I2C_STATUS_SLAW_ACK, "address error");
     i2c_write(reg);
-    status(I2C_STATUS_DATA_ACK, "device-id error");
+    i2c_assert(I2C_STATUS_DATA_ACK, "device-id error");
 
     i2c_start();
     i2c_write((address << 1) | 0x01);
-    status(I2C_STATUS_SLAR_ACK, "address error");
+    i2c_assert(I2C_STATUS_SLAR_ACK, "address error");
     // ACK when more data expected, NACK for last byte
     uint16_t r = i2c_read(true);
-    status(I2C_STATUS_RCVD_DATA_NACK, "data receive error");
+    i2c_assert(I2C_STATUS_RCVD_DATA_NACK, "data receive error");
     r |= (i2c_read(false) << 8);
-    status(I2C_STATUS_RCVD_DATA_NACK, "data receive error");
+    i2c_assert(I2C_STATUS_RCVD_DATA_NACK, "data receive error");
     i2c_stop();
 
     return r;
 }
 
 void clear(void) {
-    i2c_start();
-    i2c_write(OLED_DEVICE_ADDRESS << 1);
-    i2c_write(0x40);
-    for (int i = 0; i < 1024; i++) i2c_write(0x00);
-    i2c_stop();
+    cmd(0x21);
+    cmd(0);
+    cmd(127);
+
+    cmd(0x22);
+    cmd(0);
+    cmd(7);
+
+    for (uint8_t page = 0; page < 8; page++) {
+        cmd(0xb0 | page);
+        cmd(0x00);
+        i2c_start();
+        i2c_write(OLED_DEVICE_ADDRESS << 1);
+        i2c_write(0x40);
+        for (int i = 0; i < 128; i++) i2c_write(0x00);
+        i2c_stop();
+    }
 }
 
 #pragma clang diagnostic push
@@ -163,73 +164,99 @@ int main(void) {
 //    prompt("press enter to start: ");
 
     // reset the device
-    reset();
+    isl_reset();
 
-    i2c_init();
+    i2c_init(I2C_SPEED_400KHZ);
 
     _delay_ms(100); // wait for the display to come online
 
     // software configuration according to specs
-    write(OLED_DEVICE_ADDRESS, 0x00, OLED_MULTIPLEX_RATIO);
-    write(OLED_DEVICE_ADDRESS, 0x00, 0x2F);
-    write(OLED_DEVICE_ADDRESS, 0x00, OLED_DISPLAY_OFFSET);
-    write(OLED_DEVICE_ADDRESS, 0x00, 0x00);
-    write(OLED_DEVICE_ADDRESS, 0x00, OLED_START_LINE | 0x00);
-    write(OLED_DEVICE_ADDRESS, 0x00, OLED_SEGMENT_MAPPING1);
-    write(OLED_DEVICE_ADDRESS, 0x00, OLED_SCAN_FLIPPED);
-    write(OLED_DEVICE_ADDRESS, 0x00, OLED_COM_PIN_CONFIG);
-    write(OLED_DEVICE_ADDRESS, 0x00, 0x12);
-    write(OLED_DEVICE_ADDRESS, 0x00, OLED_CONTRAST);
-    write(OLED_DEVICE_ADDRESS, 0x00, 0x7F);
-    write(OLED_DEVICE_ADDRESS, 0x00, OLED_DISPLAY_RESUME);
-    write(OLED_DEVICE_ADDRESS, 0x00, OLED_DISPLAY_NORMAL);
-    write(OLED_DEVICE_ADDRESS, 0x00, OLED_CLOCK_DIV_FREQ);
-    write(OLED_DEVICE_ADDRESS, 0x00, 0b100000); // 0x80: 1000 (freq) 00 (divider)
-    write(OLED_DEVICE_ADDRESS, 0x00, OLED_CHARGE_PUMP);
-    write(OLED_DEVICE_ADDRESS, 0x00, 0x14);
+    cmd(OLED_DISPLAY_OFF);
+    cmd(OLED_CLOCK_DIV_FREQ);
+    cmd(0b100000); // 0x80: 1000 (freq) 00 (divider)
+    cmd(OLED_MULTIPLEX_RATIO);
+    cmd(0x2F);
+    cmd(OLED_DISPLAY_OFFSET);
+    cmd(0x00);
+    cmd(OLED_START_LINE | 0x00);
+    cmd(OLED_CHARGE_PUMP);
+    cmd(0x14);
+    cmd(OLED_SCAN_REVERSE);
+    cmd(OLED_SEGMENT_REMAP1);
+    cmd(OLED_COM_PIN_CONFIG);
+    cmd(0x12);
+    cmd(OLED_CONTRAST);
+    cmd(0xCF);
+    cmd(OLED_PRECHARGE_PERIOD);
+    cmd(0x22);
+    cmd(OLED_VCOM_DESELECT);
+    cmd(0x00);
+    cmd(OLED_DISPLAY_RESUME);
+    cmd(OLED_DISPLAY_NORMAL);
 
-    write(OLED_DEVICE_ADDRESS, 0x00, OLED_ADDRESSING_MODE);
-    write(OLED_DEVICE_ADDRESS, 0x00, OLED_ADDR_MODE_HORIZ);
-
-    write(OLED_DEVICE_ADDRESS, 0x00, OLED_DISPLAY_ON);
-
-    write(OLED_DEVICE_ADDRESS, 0x00, 0x21);
-    write(OLED_DEVICE_ADDRESS, 0x00, 0);
-    write(OLED_DEVICE_ADDRESS, 0x00, 128 - 1);
-
-    write(OLED_DEVICE_ADDRESS, 0x00, 0x22);
-    write(OLED_DEVICE_ADDRESS, 0x00, 0);
-    write(OLED_DEVICE_ADDRESS, 0x00, 48 / 8 - 1);
+    cmd(OLED_ADDRESSING_MODE);
+    cmd(OLED_ADDR_MODE_PAGE);
 
     clear();
 
-    i2c_start();
-    i2c_write(OLED_DEVICE_ADDRESS << 1);
-    status(I2C_STATUS_SLAW_ACK, "address error");
-    i2c_write(0x40);
-    status(I2C_STATUS_DATA_ACK, "reg error");
+    cmd(OLED_DISPLAY_ON);
 
-    for (int i = 0; i < 1024; i++) {
-        i2c_write(0b10101010);
-        status(I2C_STATUS_DATA_ACK, "address error");
-        _delay_ms(10);
+
+    cmd(0x21);
+    cmd(32);
+    cmd(64 + 32 - 1);
+
+    cmd(0x22);
+    cmd(0);
+    cmd(48 / 8 - 1);
+
+    for (uint8_t page = 0; page < 3; page += 1) {
+        cmd(OLED_PAGE_ADDR_START | page);
+        cmd(0x12);
+        cmd(0x00);
+
+        i2c_start();
+        i2c_write(OLED_DEVICE_ADDRESS << 1);
+        i2c_assert(I2C_STATUS_SLAW_ACK, "address error");
+        i2c_write(0x40);
+        i2c_assert(I2C_STATUS_DATA_ACK, "reg error");
+        i2c_write(0b11111111);
+        for (uint8_t column = 1; column < 63; column++) {
+            i2c_write(0b10111101);
+            i2c_assert(I2C_STATUS_DATA_ACK, "address error");
+        }
+        i2c_write(0b11111111);
+        i2c_stop();
     }
-    i2c_stop();
 
-    prompt("invert? ");
+//    cmd(OLED_SCROLL_DIAG_RIGHT);
+//    cmd(0x00);
+//    cmd(0b00000111);
+//    cmd(0b00000111);
+//    cmd(0b00000111);
+//    cmd(0b00000001);
+//    cmd(OLED_SCROLL_START);
+
+    prompt("?");
 
 //    clear(ALL);
 //
 
     uint8_t state = OLED_DISPLAY_NORMAL;
+    uint8_t x = 0x00;
     while (true) {
         if (state == OLED_DISPLAY_NORMAL) {
-            write(OLED_DEVICE_ADDRESS, 0x00, OLED_DISPLAY_INVERSE);
+            cmd(OLED_DISPLAY_INVERSE);
             state = OLED_DISPLAY_INVERSE;
         } else {
-            write(OLED_DEVICE_ADDRESS, 0x00, OLED_DISPLAY_NORMAL);
+            cmd(OLED_DISPLAY_NORMAL);
             state = OLED_DISPLAY_NORMAL;
         }
+
+        cmd(OLED_PAGE_ADDR_START | x++);
+        cmd(0x12);
+        cmd(0x00);
+
         _delay_ms(500);
     };
 

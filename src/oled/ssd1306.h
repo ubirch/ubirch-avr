@@ -40,8 +40,8 @@
 #define OLED_CONTRAST           0x81
 #define OLED_CHARGE_PUMP        0x8D
 
-#define OLED_SEGMENT_MAPPING0   0xA0
-#define OLED_SEGMENT_MAPPING1   0xA1
+#define OLED_SEGMENT_REMAP0     0xA0
+#define OLED_SEGMENT_REMAP1     0xA1
 
 #define OLED_DISPLAY_RESUME     0xA4
 #define OLED_DISPLAY_ALL_ON     0xA5
@@ -60,7 +60,7 @@
 
 // output scan direction
 #define OLED_SCAN_NORMAL        0xC0
-#define OLED_SCAN_FLIPPED       0xC8
+#define OLED_SCAN_REVERSE       0xC8
 
 // display offset (double byte command)
 #define OLED_DISPLAY_OFFSET     0xD3

@@ -23,8 +23,11 @@
 #ifndef UBIRCH_ISL29125_H
 #define UBIRCH_ISL29125_H
 
-// ISL29125 Registers
+#include <stdint.h>
+
+#define ISL_DEVICE_ADDRESS  0x44
 #define ISL_R_DEVICE_ID     0x00
+#define ISL_DEVICE_ID       0x7D
 
 // config registers
 #define ISL_R_COLOR_MODE    0x01
@@ -49,10 +52,10 @@
 #define ISL_R_BLUE_H        0x0E
 
 // reset command
-#define ISL_CMD_RESET       0x46
+#define ISL_R_RESET         0x46
 
-// ISL_R_DEVICE_ID values
-#define ISL_DEVICE_ID       0x7d
+#define ISL_SAMPLE_GAMMA    2.2
+
 
 // ISL_R_MODE values (B0-2 color mode selection)
 #define ISL_MODE_POWERDOWN  0b000000
@@ -99,5 +102,63 @@
 #define ISL_STATUS_GREEN    0b010000 // green being converted
 #define ISL_STATUS_RED      0b100000 // red being converted
 #define ISL_STATUS_BLUE     0b110000 // blue being converted
+
+// 48 bit color value (the maximum available), also used for 12 bit color reads
+typedef struct RGB48 {
+    uint16_t red;
+    uint16_t green;
+    uint16_t blue;
+} rgb48;
+
+// 24 bit color value (downsampled)
+typedef struct RGB24 {
+    uint8_t red;
+    uint8_t green;
+    uint8_t blue;
+} rgb24;
+
+/**
+ * Set up a value in a register on the sensor.
+ * @param reg the register to write
+ * @param data the value to write
+ */
+void isl_set(uint8_t reg, uint8_t data);
+
+/**
+ * Get current setup from a register on the sensor.
+ * @param reg the register to write
+ */
+uint8_t isl_get(uint8_t reg);
+
+/**
+ * Reset the sensor.
+ * A non-zero return indicates an error condition.
+ */
+uint8_t isl_reset(void);
+
+uint16_t isl_read_red(void);
+
+uint16_t isl_read_green(void);
+
+uint16_t isl_read_blue(void);
+
+/**
+ * Read full 48 bit color from sensor
+ */
+rgb48 isl_read_rgb(void);
+
+uint8_t isl_read_red8(double gamma);
+
+uint8_t isl_read_green8(double gamma);
+
+uint8_t isl_read_blue8(double gamma);
+
+/**
+ * Read sensor data as 24 bit RGB
+ * @param gamma the gamma adjustment >= 1
+ */
+rgb24 isl_read_rgb24(double gamma);
+
+
 
 #endif //UBIRCH_ISL29125_H

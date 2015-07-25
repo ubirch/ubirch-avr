@@ -25,6 +25,10 @@
 #include <stdbool.h>
 #include <util/twi.h>
 
+// define some sensible speed defaults
+#define I2C_SPEED_50KHZ                 ((((F_CPU /  50000UL) / 1) - 16) / 2)
+#define I2C_SPEED_100KHZ                ((((F_CPU / 100000UL) / 1) - 16) / 2)
+#define I2C_SPEED_400KHZ                ((((F_CPU / 400000UL) / 1) - 16) / 2)
 
 #define I2C_STATUS_NO_ERRORS            0x00
 #define I2C_STATUS_START_TRANSMITTED    TW_START            // 0x08
@@ -48,16 +52,46 @@
 #define I2C_STATUS_ILLEGAL_START_STOP   0xFF
 
 // basic two wire functionality
-void i2c_init(void);
 
+/**
+ * initalize the i2c communication
+ */
+void i2c_init(uint8_t speed);
+
+/**
+ * request the current i2c status
+ */
 uint8_t i2c_status(void);
 
+/**
+ * initiate a START condition
+ */
 void i2c_start(void);
 
+/**
+ * conclude a transmission and free the bus
+ */
 void i2c_stop(void);
 
+/**
+ * cmd a single byte to the bus
+ * @param b the byte to send
+ */
 void i2c_write(uint8_t b);
 
+/**
+ * read a single byte from the bus
+ * @param ack == true will acknowledge the read, which is necessary if we request more data
+ */
 uint8_t i2c_read(bool ack);
+
+/**
+ * assert that a certain bus condition is true
+ * @param the expected result
+ * @param message the message to display, or NULL
+ */
+#define i2c_assert(expected, message) if(TWSR != expected) \
+    printf("i2c: status: 0x%02x (expected 0x%02x): %s\n", TWSR, expected, message);
+
 
 #endif //UBIRCH_I2C_H

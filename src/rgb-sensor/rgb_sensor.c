@@ -21,23 +21,15 @@
  */
 #include "uart.h"
 #include "uart_stdio.h"
-#include "i2c.h"
-#include "isl29125.h"
-#include "dbg_utils.h"
+
+#include <i2c.h>
+#include <isl29125.h>
 
 #include <math.h>
 #include <util/delay.h>
+#include <dbg_utils.h>
 
 #define RGB_SENSOR_ADDRESS 0x44
-
-bool status(uint8_t expected, const char *msg) {
-    uint8_t s = i2c_status();
-    if (s != expected) {
-        printf("i2c: status: 0x%02x (expected 0x%02x): %s\n", s, expected, msg);
-        return true;
-    }
-    return false;
-}
 
 /**
  * A little prompt function to step through the code.
@@ -60,69 +52,6 @@ void blink(void) {
     puts("");
 }
 
-void reset(uint8_t address) {
-    i2c_start();
-    i2c_write(address << 1);
-    status(I2C_STATUS_SLAW_ACK, "address error");
-    i2c_write(ISL_CMD_RESET);
-    status(I2C_STATUS_DATA_ACK, "register error");
-    i2c_stop();
-}
-
-void write(uint8_t address, uint8_t reg, uint8_t data) {
-    i2c_start();
-    i2c_write(address << 1);
-    status(I2C_STATUS_SLAW_ACK, "address error");
-    i2c_write(reg);
-    status(I2C_STATUS_DATA_ACK, "register error");
-    i2c_write(data);
-    status(I2C_STATUS_DATA_ACK, "value error");
-    i2c_stop();
-}
-
-/**
- * I2C read a byte.
- */
-uint8_t read(uint8_t address, uint8_t reg) {
-    i2c_start();
-    i2c_write(address << 1);
-    status(I2C_STATUS_SLAW_ACK, "address error");
-    i2c_write(reg);
-    status(I2C_STATUS_DATA_ACK, "device-id error");
-
-    i2c_start();
-    i2c_write((address << 1) | 0x01);
-    status(I2C_STATUS_SLAR_ACK, "address error");
-    uint8_t r = i2c_read(false);
-    status(I2C_STATUS_RCVD_DATA_NACK, "data receive error");
-    i2c_stop();
-
-    return r;
-}
-
-/**
- * I2C read an int (16bit)
- */
-uint16_t read16(uint8_t address, uint8_t reg) {
-    i2c_start();
-    i2c_write(address << 1);
-    status(I2C_STATUS_SLAW_ACK, "address error");
-    i2c_write(reg);
-    status(I2C_STATUS_DATA_ACK, "device-id error");
-
-    i2c_start();
-    i2c_write((address << 1) | 0x01);
-    status(I2C_STATUS_SLAR_ACK, "address error");
-    // ACK when more data expected, NACK for last byte
-    uint16_t r = i2c_read(true);
-    status(I2C_STATUS_RCVD_DATA_NACK, "data receive error");
-    r |= (i2c_read(false) << 8);
-    status(I2C_STATUS_RCVD_DATA_NACK, "data receive error");
-    i2c_stop();
-
-    return r;
-}
-
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wmissing-noreturn"
 
@@ -142,77 +71,53 @@ int main(void) {
     blink();
     prompt("press enter to start:");
 
-    i2c_init();
+    i2c_init(I2C_SPEED_400KHZ);
 
-    // read the device id register and check it
-    uint8_t id = read(RGB_SENSOR_ADDRESS, ISL_R_DEVICE_ID);
-    printf("receiving device id: 0x%02x (expect 0x%02x)\n", id, ISL_DEVICE_ID);
+    // reset device
+    if (!isl_reset()) {
+        puts("could not initialize ISL29125 RGB sensor");
+    }
 
-    // do the reset
-    reset(RGB_SENSOR_ADDRESS);
+    // set sampling mode, ir filter and interrupt mode
+    isl_set(ISL_R_COLOR_MODE, ISL_MODE_RGB | ISL_MODE_10KLUX | ISL_MODE_16BIT);
+    isl_set(ISL_R_FILTERING, ISL_FILTER_IR_MAX);
+    isl_set(ISL_R_INTERRUPT, ISL_INT_ON_THRSLD);
 
-    uint8_t check = 0x00;
-    check |= read(RGB_SENSOR_ADDRESS, ISL_R_COLOR_MODE);
-    check |= read(RGB_SENSOR_ADDRESS, ISL_R_FILTERING);
-    check |= read(RGB_SENSOR_ADDRESS, ISL_R_INTERRUPT);
-    check |= read(RGB_SENSOR_ADDRESS, ISL_R_STATUS);
-    printf("reset result: 0x%02x (expect 0x00)\n", check);
-
-    // set sampling mode
-    uint8_t mode = ISL_MODE_RGB | ISL_MODE_10KLUX | ISL_MODE_16BIT;
-    printf("setting mode: %s\n", bits(mode));
-    write(RGB_SENSOR_ADDRESS, ISL_R_COLOR_MODE, mode);
-
-    // set filtering mode
-    uint8_t filtering = ISL_FILTER_IR_MAX;
-    printf("setting filter: %s\n", bits(filtering));
-    write(RGB_SENSOR_ADDRESS, ISL_R_FILTERING, filtering);
-
-    // set interrupt mode
-    uint8_t interrupts = ISL_INT_ON_THRSLD; // actually does nothing, sets all bits 0
-    printf("setting interrupts: %s\n", bits(interrupts));
-    write(RGB_SENSOR_ADDRESS, ISL_R_INTERRUPT, interrupts);
-
-    printf("read mode: %s\n", bits(read(RGB_SENSOR_ADDRESS, ISL_R_COLOR_MODE)));
-    printf("read filter: %s\n", bits(read(RGB_SENSOR_ADDRESS, ISL_R_FILTERING)));
-    printf("read interrupts: %s\n", bits(read(RGB_SENSOR_ADDRESS, ISL_R_INTERRUPT)));
+    printf("read mode: ");
+    uint8_t color_mode = isl_get(ISL_R_COLOR_MODE);
+    print_bits(1, &color_mode);
+    printf("read filter: ");
+    uint8_t ir_filtering = isl_get(ISL_R_FILTERING);
+    print_bits(1, &ir_filtering);
+    printf("read interrupts: ");
+    uint8_t intr = isl_get(ISL_R_INTERRUPT);
+    print_bits(1, &intr);
 
     puts("reading RGB values from sensor");
     puts("'%' indicates the chip is still in a conversion cyle, so we wait");
     while (1) {
         // wait for the conversion cycle to be done, this just indicates there is a cycle
         // in progress. the actual r,g,b values are always available from the last cycle
-        while (!(read(RGB_SENSOR_ADDRESS, ISL_R_STATUS) & (ISL_STATUS_ADC_DONE))) putchar('%');
+        while (!(isl_get(ISL_R_STATUS) & ISL_STATUS_ADC_DONE)) putchar('%');
         puts("");
-
-        // this is how the SparkFun code reads the RGB values (just the lower byte)
-        printf("old  : ");
-        unsigned int red_old = read16(RGB_SENSOR_ADDRESS, ISL_R_RED_L);
-        unsigned int green_old = read16(RGB_SENSOR_ADDRESS, ISL_R_GREEN_L);
-        unsigned int blue_old = read16(RGB_SENSOR_ADDRESS, ISL_R_BLUE_L);
-        printf("0x%04x%04x%04x rgb24(%u,%u,%u)\n", red_old, green_old, blue_old, red_old, green_old, blue_old);
-
-        // here we convert them as in the FEWL sensor
-        printf("old  : ");
-        unsigned int red_old_x = (unsigned int) sqrt(sqrt(red_old * red_old / 1));
-        unsigned int green_old_x = (unsigned int) sqrt(sqrt(green_old * green_old / 1));
-        unsigned int blue_old_x = (unsigned int) sqrt(sqrt(blue_old * blue_old / 1));
-        printf("0x%02x%02x%02x rgb24(%u,%u,%u)\n", red_old_x, green_old_x, blue_old_x, red_old_x, green_old_x,
-               blue_old_x);
 
         // read the full 36 or 48 bit color
         printf("48bit: ");
-        uint16_t red = read(RGB_SENSOR_ADDRESS, ISL_R_RED_L) | (read16(RGB_SENSOR_ADDRESS, ISL_R_RED_H) << 8);
-        uint16_t green = read(RGB_SENSOR_ADDRESS, ISL_R_GREEN_L) | (read16(RGB_SENSOR_ADDRESS, ISL_R_GREEN_H) << 8);
-        uint16_t blue = read(RGB_SENSOR_ADDRESS, ISL_R_BLUE_L) | (read16(RGB_SENSOR_ADDRESS, ISL_R_BLUE_H) << 8);
-        printf("0x%04x%04x%04x rgb48(%u,%u,%u)\n", red, green, blue, red, green, blue);
+        rgb48 rgb = isl_read_rgb();
+        printf("0x%04x%04x%04x rgb48(%u,%u,%u)\n", rgb.green, rgb.red, rgb.blue, rgb.red, rgb.green, rgb.blue);
 
         printf("24bit: ");
-        // adjust with gamma correction 2.2 (not scientific!)
-        unsigned int red8 = (unsigned int) (255 * pow(red / 65535.0, 1 / 2.2));
-        unsigned int green8 = (unsigned int) (255 * pow(green / 65535.0, 1 / 2.2));
-        unsigned int blue8 = (unsigned int) (255 * pow(blue / 65535.0, 1 / 2.2));
-        printf("0x%02x%02x%02x rgb24(%u,%u,%u)\n", red8, green8, blue8, red8, green8, blue8);
+        rgb24 rgb8 = isl_read_rgb24(1);
+        printf("0x%02x%02x%02x rgb24(%u,%u,%u)\n", rgb8.red, rgb8.green, rgb8.blue, rgb8.red, rgb8.green, rgb8.blue);
+
+        // here we convert them as in the FEWL sensor
+        printf("old  : ");
+        unsigned int red_old_x = (unsigned int) sqrt(sqrt(rgb.red * rgb.red / 1));
+        unsigned int green_old_x = (unsigned int) sqrt(sqrt(rgb.green * rgb.green / 1));
+        unsigned int blue_old_x = (unsigned int) sqrt(sqrt(rgb.blue * rgb.blue / 1));
+        printf("0x%02x%02x%02x rgb24(%u,%u,%u)\n", red_old_x, green_old_x, blue_old_x, red_old_x, green_old_x,
+               blue_old_x);
+
         prompt("next? ");
     }
 }

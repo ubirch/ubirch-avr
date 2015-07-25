@@ -21,9 +21,17 @@
 #include "dbg_utils.h"
 
 // create a string with the bits contained in this byte (not thread safe!)
-char *bits(uint8_t n) {
-    static char buf[8];
-    for (uint8_t i = 0; i < 7; i++)
-        *(buf + i) = (char) ((n >> i) & 1 ? '1' : '0');
-    return buf;
+void print_bits(size_t size, void const *const ptr) {
+    unsigned char *b = (unsigned char *) ptr;
+    unsigned char byte;
+    int i, j;
+
+    for (i = size - 1; i >= 0; i--) {
+        for (j = 7; j >= 0; j--) {
+            byte = (unsigned char) (b[i] & (1 << j));
+            byte >>= j;
+            printf("%u", byte);
+        }
+    }
+    puts("");
 }

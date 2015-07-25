@@ -31,6 +31,6 @@
 #  define DBG_MSG(...)
 #endif
 
-char *bits(uint8_t n);
+void print_bits(size_t n, void const *const ptr);
 
 #endif //UBIRCH_DBG_UTILS_H

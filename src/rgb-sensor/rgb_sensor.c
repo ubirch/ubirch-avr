@@ -29,8 +29,6 @@
 #include <util/delay.h>
 #include <dbg_utils.h>
 
-#define RGB_SENSOR_ADDRESS 0x44
-
 /**
  * A little prompt function to step through the code.
  */

@@ -197,12 +197,12 @@ int main(void) {
 
     // configure scrolling of both lines 5 and 6
     oled_cmd(OLED_SCROLL_LEFT);
-    oled_cmd(0x00);
-    oled_cmd(0b00000100);
-    oled_cmd(0b00000101);
-    oled_cmd(0b00000111);
-    oled_cmd(0b00000101);
-    oled_cmd(0b00000000);
+    oled_cmd(0x00000000); // A dummy
+    oled_cmd(0b00000100); // B start page
+    oled_cmd(0b00000101); // C speed
+    oled_cmd(0b00000111); // D end page
+    oled_cmd(0b00000000); // E dummy
+    oled_cmd(0b11111111); // F dummy
     oled_cmd(OLED_SCROLL_START);
 
     // set drawing area (rows and pages)

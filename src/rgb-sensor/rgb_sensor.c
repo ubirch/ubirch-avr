@@ -107,7 +107,7 @@ int main(void) {
         printf("0x%04x%04x%04x rgb48(%u,%u,%u)\n", rgb.green, rgb.red, rgb.blue, rgb.red, rgb.green, rgb.blue);
 
         printf("24bit: ");
-        rgb24 rgb8 = isl_read_rgb24(1);
+        rgb24 rgb8 = isl_read_rgb24();
         printf("0x%02x%02x%02x rgb24(%u,%u,%u)\n", rgb8.red, rgb8.green, rgb8.blue, rgb8.red, rgb8.green, rgb8.blue);
 
         // here we convert them as in the FEWL sensor

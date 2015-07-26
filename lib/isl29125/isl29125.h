@@ -54,7 +54,8 @@
 // reset command
 #define ISL_R_RESET         0x46
 
-#define ISL_SAMPLE_GAMMA    2.2
+#define ISL_SAMPLE_GAMMA_0  1.0
+#define ISL_SAMPLE_GAMMA_1  2.2
 
 
 // ISL_R_MODE values (B0-2 color mode selection)
@@ -103,7 +104,6 @@
 #define ISL_STATUS_RED      0b100000 // red being converted
 #define ISL_STATUS_BLUE     0b110000 // blue being converted
 
-#define COLOR_16BIT 65535.0
 // 48 bit color value (the maximum available), also used for 12 bit color reads
 typedef struct RGB48 {
     uint16_t red;

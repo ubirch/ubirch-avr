@@ -22,7 +22,7 @@
 #ifndef UBIRCH_DBG_UTILS_H
 #define UBIRCH_DBG_UTILS_H
 
-#include <stdint.h>
+#include <stddef.h>
 
 #ifndef NDEBUG
 #  include <stdio.h>

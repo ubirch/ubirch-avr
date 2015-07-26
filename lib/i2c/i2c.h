@@ -90,8 +90,11 @@ uint8_t i2c_read(bool ack);
  * @param the expected result
  * @param message the message to display, or NULL
  */
-#define i2c_assert(expected, message) if(TWSR != expected) \
-    printf("i2c: status: 0x%02x (expected 0x%02x): %s\n", TWSR, expected, message);
-
+#ifndef NDEBUG
+#  define i2c_assert(expected, message) if(TWSR != expected) \
+      printf("i2c: status: 0x%02x (expected 0x%02x): %s\n", TWSR, expected, message);
+#else
+#  define i2c_assert(expected, message)
+#endif
 
 #endif //UBIRCH_I2C_H

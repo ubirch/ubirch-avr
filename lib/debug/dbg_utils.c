@@ -19,6 +19,8 @@
  */
 
 #include "dbg_utils.h"
+#include <stdio.h>
+#include <stddef.h>
 
 // create a string with the bits contained in this byte (not thread safe!)
 void print_bits(size_t size, void const *const ptr) {

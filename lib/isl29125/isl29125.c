@@ -121,22 +121,20 @@ uint16_t isl_read_blue(void) {
     return isl_read16(ISL_R_BLUE_L);
 }
 
-static uint8_t downsample(uint16_t c, double gamma) {
-    double range = (isl_read(ISL_R_COLOR_MODE) & ISL_MODE_12BIT) ? 4096.0 : 65535.0;
-    double sample = (255 * pow(c / range, 1.0 / (gamma > 0 ? gamma : 1)));
-    return (uint8_t) sample;
+static inline uint8_t downsample(uint16_t c) {
+    return c >> ((isl_read(ISL_R_COLOR_MODE) & ISL_MODE_12BIT) ? 4 : 8);
 }
 
-uint8_t isl_read_red8(double gamma) {
-    return downsample(isl_read_red(), gamma);
+uint8_t isl_read_red8(void) {
+    return downsample(isl_read_red());
 }
 
-uint8_t isl_read_green8(double gamma) {
-    return downsample(isl_read_green(), gamma);;
+uint8_t isl_read_green8(void) {
+    return downsample(isl_read_green());;
 }
 
-uint8_t isl_read_blue8(double gamma) {
-    return downsample(isl_read_blue(), gamma);
+uint8_t isl_read_blue8(void) {
+    return downsample(isl_read_blue());
 }
 
 rgb48 isl_read_rgb(void) {
@@ -147,10 +145,10 @@ rgb48 isl_read_rgb(void) {
     return result;
 }
 
-rgb24 isl_read_rgb24(double gamma) {
+rgb24 isl_read_rgb24(void) {
     rgb24 result;
-    result.red = isl_read_red8(gamma);
-    result.green = isl_read_green8(gamma);
-    result.blue = isl_read_blue8(gamma);
+    result.red = isl_read_red8();
+    result.green = isl_read_green8();
+    result.blue = isl_read_blue8();
     return result;
 }

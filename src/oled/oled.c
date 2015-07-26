@@ -26,10 +26,12 @@
 #include "ssd1306.h"
 #include "uart.h"
 #include "i2c.h"
+#include "font5x5.h"
 
 #include <util/delay.h>
 #include <uart_stdio.h>
 #include <isl29125.h>
+#include <dbg_utils.h>
 
 static const uint8_t OLED_DEVICE_ADDRESS = 0x3d;
 
@@ -126,7 +128,7 @@ int main(void) {
 
     // RGB sensor setup
     isl_reset();
-    isl_set(ISL_R_COLOR_MODE, ISL_MODE_RGB | ISL_MODE_10KLUX | ISL_MODE_16BIT);
+    isl_set(ISL_R_COLOR_MODE, ISL_MODE_RGB | ISL_MODE_375LUX | ISL_MODE_16BIT);
     isl_set(ISL_R_FILTERING, ISL_FILTER_IR_MAX);
     isl_set(ISL_R_INTERRUPT, ISL_INT_ON_THRSLD);
 
@@ -148,7 +150,7 @@ int main(void) {
     oled_cmd(OLED_COM_PIN_CONFIG);
     oled_cmd(0x12);
     oled_cmd(OLED_CONTRAST);
-    oled_cmd(0xCF);
+    oled_cmd(0x10);
     oled_cmd(OLED_PRECHARGE_PERIOD);
     oled_cmd(0x22);
     oled_cmd(OLED_VCOM_DESELECT);
@@ -163,6 +165,45 @@ int main(void) {
 
     oled_cmd(OLED_DISPLAY_ON);
 
+    // print the ABC character set (what fits) onto the display line 5
+    oled_cmd(OLED_PAGE_ADDR_START | 4);
+    oled_cmd(0x00);
+    oled_cmd(0x00);
+
+    i2c_start();
+    i2c_write(OLED_DEVICE_ADDRESS << 1);
+    i2c_assert(I2C_STATUS_SLAW_ACK, "address error");
+    i2c_write(0x40);
+    i2c_assert(I2C_STATUS_DATA_ACK, "reg error");
+    for (uint8_t i = 0; i < 128 - (128 / 6) - 1; i++) {
+        if (i % 5 == 0) i2c_write(0);
+        i2c_write(font5x5_abc[i]);
+    }
+
+    // print the extra character set (what fits) onto the display line 6
+    oled_cmd(OLED_PAGE_ADDR_START | 5);
+    oled_cmd(0x00);
+    oled_cmd(0x00);
+
+    i2c_start();
+    i2c_write(OLED_DEVICE_ADDRESS << 1);
+    i2c_assert(I2C_STATUS_SLAW_ACK, "address error");
+    i2c_write(0x40);
+    i2c_assert(I2C_STATUS_DATA_ACK, "reg error");
+    for (uint8_t i = 0; i < 128 - (128 / 6) - 1; i++) {
+        if (i % 5 == 0) i2c_write(0);
+        i2c_write(font5x5_extra[i]);
+    }
+
+    // configure scrolling of both lines 5 and 6
+    oled_cmd(OLED_SCROLL_LEFT);
+    oled_cmd(0x00);
+    oled_cmd(0b00000100);
+    oled_cmd(0b00000101);
+    oled_cmd(0b00000111);
+    oled_cmd(0b00000101);
+    oled_cmd(0b00000000);
+    oled_cmd(OLED_SCROLL_START);
 
     // set drawing area (rows and pages)
     oled_cmd(0x21);
@@ -173,15 +214,25 @@ int main(void) {
     oled_cmd(0);
     oled_cmd(48 / 8 - 1);
 
-    while (true) {
-        // read RGB values, convert the 0-255 into 0-64
-        rgb24 rgb = isl_read_rgb24(1);
-        double colors[3] = {rgb.red / 2, rgb.green / 2, rgb.blue / 2};
-        //printf("RGB: %04x%04x%04x (%d, %d, %d)\n", rgb.red, rgb.green, rgb.blue,
-        //       (uint8_t) colors[0], (uint8_t) colors[1], (uint8_t) colors[2]);
 
-        // visualize the RGB levels using three gauges
+    while (true) {
+        while (!(isl_get(ISL_R_STATUS) & ISL_STATUS_ADC_DONE)) continue;
+
+        // read RGB values, convert the 0-255 into 0-64
+        rgb48 rgbx = isl_read_rgb();
+        rgb24 rgb = isl_read_rgb24();
+        uint8_t colors[6] = {
+                rgb.red / 2,
+                rgb.green / 2,
+                rgb.blue / 2,
+        };
+        DBG_MSG("RGB48: %04x%04x%04x\n", rgbx.red, rgbx.green, rgbx.blue);
+        DBG_MSG("RGB24: %02x%02x%02x\n", rgb.red, rgb.green, rgb.blue);
+
+
+        // visualize the RGB levels using three gauges (stop scrolling to avoid picture erosion)
         for (uint8_t page = 0; page < 3; page += 1) {
+            oled_cmd(OLED_SCROLL_STOP);
             oled_cmd(OLED_PAGE_ADDR_START | page);
             oled_cmd(0x12);
             oled_cmd(0x00);
@@ -200,7 +251,10 @@ int main(void) {
             i2c_write(0b01111110);
             i2c_stop();
 
-            _delay_ms(50);
+            // now we can scroll again, we are waiting some time anyway
+            oled_cmd(OLED_SCROLL_START);
+
+            _delay_ms(100);
         }
     }
 }

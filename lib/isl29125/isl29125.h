@@ -148,17 +148,17 @@ uint16_t isl_read_blue(void);
  */
 rgb48 isl_read_rgb(void);
 
-uint8_t isl_read_red8(double gamma);
+uint8_t isl_read_red8(void);
 
-uint8_t isl_read_green8(double gamma);
+uint8_t isl_read_green8(void);
 
-uint8_t isl_read_blue8(double gamma);
+uint8_t isl_read_blue8(void);
 
 /**
  * Read sensor data as 24 bit RGB
  * @param gamma the gamma adjustment >= 1
  */
-rgb24 isl_read_rgb24(double gamma);
+rgb24 isl_read_rgb24(void);
 
 
 

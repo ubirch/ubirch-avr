@@ -15,7 +15,11 @@ set(BAUD  115200)
 
 # set the programmer and the device to use (default is to use simavr)
 set(PROG_TYPE     arduino)
+# Baite programmer
 set(PROG_DEV     /dev/cu.SLAB_USBtoUART)
+# the microview programmer
+#set(PROG_DEV     /dev/cu.usbserial-DA00UCWL)
+
 set(MONITOR      screen)
 set(MONITOR_ARGS ${PROG_DEV} ${BAUD})
 

@@ -127,8 +127,8 @@ int main(void) {
     oled_reset();
 
     // RGB sensor setup
-    isl_reset();
-    isl_set(ISL_R_COLOR_MODE, ISL_MODE_RGB | ISL_MODE_10KLUX | ISL_MODE_16BIT);
+    if (!isl_reset()) DBG_MSG("error: can't find rgb sensor");
+    isl_set(ISL_R_COLOR_MODE, ISL_MODE_RGB | ISL_MODE_375LUX | ISL_MODE_16BIT);
     isl_set(ISL_R_FILTERING, ISL_FILTER_IR_MAX);
     isl_set(ISL_R_INTERRUPT, ISL_INT_ON_THRSLD);
 

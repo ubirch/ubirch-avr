@@ -96,8 +96,7 @@ uint8_t isl_reset(void) {
     i2c_assert(I2C_STATUS_DATA_ACK, "register error");
     i2c_stop();
 
-    uint8_t id = isl_read(ISL_R_DEVICE_ID);
-    if (id != ISL_R_DEVICE_ID) return 0;
+    if (isl_read(ISL_R_DEVICE_ID) != ISL_DEVICE_ID) return 0;
 
     uint8_t check = 0x00;
     check |= isl_read(ISL_R_COLOR_MODE);
@@ -138,17 +137,19 @@ uint8_t isl_read_blue8(void) {
 }
 
 rgb48 isl_read_rgb(void) {
-    static rgb48 result;
-    result.red = isl_read_red();
-    result.blue = isl_read_blue();
-    result.green = isl_read_green();
+    rgb48 result = {
+            .red = isl_read_red(),
+            .green = isl_read_green(),
+            .blue = isl_read_blue()
+    };
     return result;
 }
 
 rgb24 isl_read_rgb24(void) {
-    rgb24 result;
-    result.red = isl_read_red8();
-    result.green = isl_read_green8();
-    result.blue = isl_read_blue8();
+    rgb24 result = {
+            .red = isl_read_red8(),
+            .green = isl_read_green8(),
+            .blue = isl_read_blue8()
+    };
     return result;
 }

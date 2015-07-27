@@ -128,7 +128,7 @@ int main(void) {
 
     // RGB sensor setup
     isl_reset();
-    isl_set(ISL_R_COLOR_MODE, ISL_MODE_RGB | ISL_MODE_375LUX | ISL_MODE_16BIT);
+    isl_set(ISL_R_COLOR_MODE, ISL_MODE_RGB | ISL_MODE_10KLUX | ISL_MODE_16BIT);
     isl_set(ISL_R_FILTERING, ISL_FILTER_IR_MAX);
     isl_set(ISL_R_INTERRUPT, ISL_INT_ON_THRSLD);
 
@@ -215,12 +215,22 @@ int main(void) {
     oled_cmd(48 / 8 - 1);
 
 
+    rgb24 rgb_cache = {.red=0, .green=0, .blue=0};
     while (true) {
         while (!(isl_get(ISL_R_STATUS) & ISL_STATUS_ADC_DONE)) continue;
 
         // read RGB values, convert the 0-255 into 0-64
-        rgb48 rgbx = isl_read_rgb();
         rgb24 rgb = isl_read_rgb24();
+        // check if there was a change
+        if (rgb_cache.red == rgb.red && rgb_cache.green == rgb.green && rgb_cache.blue == rgb.blue) {
+            _delay_ms(100);
+            continue;
+        }
+        rgb_cache.red = rgb.red;
+        rgb_cache.green = rgb.green;
+        rgb_cache.blue = rgb.blue;
+
+        rgb48 rgbx = isl_read_rgb();
         uint8_t colors[6] = {
                 rgb.red / 2,
                 rgb.green / 2,

@@ -3,7 +3,6 @@
 #=====================================================================================
 cmake_minimum_required(VERSION 3.0)
 
-
 # simulator settings
 #set(PROG_TYPE arduino)
 #set(PROG_DEV /tmp/simavr-uart0)
@@ -120,4 +119,5 @@ foreach(cmakedir ${SRC_DIRS})
     endif()
 endforeach()
 
+# also add the sketches
 add_subdirectory(sketches)

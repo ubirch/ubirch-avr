@@ -65,9 +65,9 @@ add_definitions(-DARDUINO_ARCH_AVR)
 
 set(COMPILER_FLAGS "-g -Os -Wall -Wextra -MMD -mmcu=${MCU}")
 
-set(CMAKE_C_FLAGS      "${COMPILER_FLAGS} -ffunction-sections -fdata-sections")
-set(CMAKE_CXX_FLAGS    "${COMPILER_FLAGS} -fno-exceptions -ffunction-sections -fdata-sections -fno-threadsafe-statics")
-set(CMAKE_ASM_FLAGS    "-x assembler-with-cpp ${COMPILER_FLAGS} ")
+set(CMAKE_C_FLAGS          "${COMPILER_FLAGS} -std=gnu99 -ffunction-sections -fdata-sections")
+set(CMAKE_CXX_FLAGS        "${COMPILER_FLAGS} -fno-exceptions -ffunction-sections -fdata-sections -fno-threadsafe-statics")
+set(CMAKE_ASM_FLAGS        "-x assembler-with-cpp ${COMPILER_FLAGS} ")
 set(CMAKE_EXE_LINKER_FLAGS "-Wl,--gc-sections")
 
 # we need a little function to add multiple targets

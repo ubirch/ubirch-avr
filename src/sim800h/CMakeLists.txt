@@ -1,0 +1,2 @@
+add_executable_avr(sim800h sim800h.cpp)
+target_link_libraries(sim800h SoftwareSerial)

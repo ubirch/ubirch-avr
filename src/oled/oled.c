@@ -23,9 +23,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "ssd1306.h"
+
 #include "uart.h"
 #include "i2c.h"
+#include "ssd1306.h"
 #include "font5x5.h"
 
 #include <util/delay.h>

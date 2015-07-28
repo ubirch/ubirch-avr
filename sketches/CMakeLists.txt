@@ -1,6 +1,7 @@
 # Load Arduino sketches
 
 if(DEFINED ARDUINO_SDK_PATH AND IS_DIRECTORY ${ARDUINO_SDK_PATH})
+
     # set the paths
     set(ARDUINO_CORES_PATH ${ARDUINO_SDK_PATH}/hardware/arduino/avr/cores/arduino)
     set(ARDUINO_VARIANTS_PATH ${ARDUINO_SDK_PATH}/hardware/arduino/avr/variants/standard)
@@ -59,6 +60,7 @@ if(DEFINED ARDUINO_SDK_PATH AND IS_DIRECTORY ${ARDUINO_SDK_PATH})
         endif()
     endforeach()
 
+    # finally add all the sketches
     file(GLOB SRC_DIRS "*/CMakeLists.txt")
     foreach(cmakedir ${SRC_DIRS})
         get_filename_component(subdir ${cmakedir} PATH)

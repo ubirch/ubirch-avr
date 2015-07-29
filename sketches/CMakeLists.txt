@@ -1,5 +1,8 @@
 # Load Arduino sketches
 
+if(DEFINED ENV{ARDUINO_SDK_PATH})
+    set (ARDUINO_SDK_PATH "$ENV{ARDUINO_SDK_PATH}" CACHE PATH "Arduino SDK Path" FORCE)
+endif()
 if(DEFINED ARDUINO_SDK_PATH AND IS_DIRECTORY ${ARDUINO_SDK_PATH})
 
     # set the paths

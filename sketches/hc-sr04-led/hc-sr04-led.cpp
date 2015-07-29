@@ -47,10 +47,10 @@ void setup() {
 /*
  * Small blink function that uses the distance for frequency.
  */
-void blink(int distance) {
+void blink(unsigned long distance) {
     for (byte i = 0; i < 5; i++) {
         digitalWrite(LED, HIGH);   // turn the LED on (HIGH is the voltage level)
-        delay(min((unsigned long) distance, 200));              // wait for a second
+        delay(min(distance, 200));              // wait for a second
         digitalWrite(LED, LOW);    // turn the LED off by making the voltage LOW
     }
 }
@@ -74,7 +74,7 @@ void loop() {
     distance = (duration / 2) / 29 / 2;
 
     // give some feedback using the built-in LED
-    blink((int) distance);
+    blink((unsigned long) distance);
 
     // catch some out of range values or print the distance
     if (distance >= 200 || distance <= 0) {

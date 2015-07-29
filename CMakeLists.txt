@@ -3,10 +3,6 @@
 #=====================================================================================
 cmake_minimum_required(VERSION 3.0)
 
-# simulator settings
-#set(PROG_TYPE arduino)
-#set(PROG_DEV /tmp/simavr-uart0)
-
 # necessary settings for the chip we use
 set(MCU   atmega328p)
 set(F_CPU 16000000)

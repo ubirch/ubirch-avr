@@ -2,10 +2,36 @@
 
 Contains little libs to work with AVR chip internals as well as to speak with peripherpherals.
 Additionally allows for compiling sketches that have been renamed ```sketch-name.cpp``` and
-have fixed paths. Please read the CMakeLists.txt examples to understand how to tell the build
+have fixed paths. Please read the ```CMakeLists.txt``` examples to understand how to tell the build
 system which libraries your code needs.
 
 ## Building
+
+The build process is based upon [CMake](http://www.cmake.org/), which plays nice with a number
+of IDEs. However, as we have to create some special dependencies there is a certain directory
+structure to be followed:
+
+```
+<project>
+ +-lib (contains directories with linkable libraries)
+ +-src (contains the sources for pure AVR programs)
+ +-sketches
+   +-<sketch> (a possible Arduino sketch)
+   +-libraries (directory with 3rd party Arduino libs)
+```
+
+The cmake process will scan through both the ```src``` and ```lib``` directory and add all
+directories that contain a ```CMakeLists.txt``` build file. These individual build files may
+contain additional specific cmake configurations not covered by the general toolchain.
+
+If the ```ARDUINO_SDK_PATH``` variable is set (```cmake -DARDUINO_SDK_PATH=...```) the
+[Arduino SDK](https://www.arduino.cc/en/Main/Software) is also set up and cmake will look in the
+```sketches``` directory for Sketch and 3rd party libraries.
+
+> Be aware that sketches also need a ```CMakeLists.txt``` build file declaring dependencies.
+
+SDK libraries are available, like ```SoftwareSerial```,```Wire```, etc. The core library is
+called ```arduino-core``` and must be declared for Sketches that have no other dependencies.
  
 ### Prerequisits
 

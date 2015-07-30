@@ -39,27 +39,40 @@ if(DEFINED ARDUINO_SDK_PATH AND IS_DIRECTORY ${ARDUINO_SDK_PATH})
         endif()
     endforeach()
 
-    # configure libraries from other providers found in the libraries dir
-    file(GLOB EXT_DIRS "libraries/*")
-    foreach(libdir ${EXT_DIRS})
-        get_filename_component(libname ${libdir} NAME)
-        if(IS_DIRECTORY ${libdir})
-            file(GLOB_RECURSE sources ${libdir}/*.asm ${libdir}/*.c ${libdir}/*.cpp )
+    # add a sketch dependency by giving the target and a git url
+    function(add_sketch_dependency TARGET NAME URL)
+        # try to install dependent libraries
+        find_package(Git)
+        if(GIT_FOUND)
+            # clone dependency into libraries
+            get_filename_component(MYLIBS "${CMAKE_CURRENT_SOURCE_DIR}/../libraries" REALPATH)
+            message("${MYLIBS}")
+            if(NOT EXISTS ${MYLIBS}/${NAME})
+                message(STATUS "Installing ${NAME} (${URL})")
+                execute_process(
+                    COMMAND ${GIT_EXECUTABLE} clone "${URL}" "${NAME}"
+                    WORKING_DIRECTORY ${MYLIBS})
+            endif()
+
+            # now add a library target
+            file(GLOB_RECURSE sources ${MYLIBS}/${NAME}/*.S ${MYLIBS}/${NAME}/*.c ${MYLIBS}/${NAME}/*.cpp )
             string(REGEX REPLACE "examples/.*" "" sources "${sources}")
             if(sources)
-                message(STATUS "Adding Arduino library: ${libname}")
-                add_library(${libname} ${sources})
-                target_link_libraries(${libname} ${LIBS})
+                message(STATUS "Adding external library: ${NAME}")
+                add_library(${NAME} ${sources})
+                target_link_libraries(${NAME} ${LIBS})
                 foreach(src ${sources})
                     get_filename_component(dir ${src} PATH)
-                    target_include_directories(${libname} PUBLIC ${dir})
+                    target_include_directories(${NAME} PUBLIC ${dir})
                 endforeach()
             else()
-                include_directories(SYSTEM ${libdir})
+                message(FATAL_ERROR "Could not find sources in library ${NAME}!")
             endif()
-            list(APPEND LIBS ${libname})
+        else()
+            message(FATAL_ERROR "Missing git, please install and try again!")
         endif()
-    endforeach()
+        target_link_libraries(${TARGET} ${NAME})
+    endfunction(add_sketch_dependency)
 
     # finally add all the sketches
     file(GLOB SRC_DIRS "*/CMakeLists.txt")

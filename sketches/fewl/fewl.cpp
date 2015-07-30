@@ -26,20 +26,16 @@ Adafruit_FONA fona = Adafruit_FONA(FONA_RST);
 
 int i = 1; //loop counter
 
-// for the compiler, pre-declare the functions (necessary if not in correct calling order)
-void TurnOnFona();
-
-void TurnOffFona();
-
-void sleepabit(int howlong);
-
-void GetDisconnected();
-
-void flushSerial();
-
-void GetConnected();
-
-void SendGPS();
+void TurnOffFona() {
+    Serial.println(F("Turning off Fona "));
+    fona.println("AT+CPOWD=1");
+//    while (digitalRead(FONA_PS) == HIGH) {
+//        Serial.println(digitalRead(FONA_PS));
+//        digitalWrite(FONA_KEY, LOW);
+//        //delay(100);
+//    }
+//    digitalWrite(FONA_KEY, HIGH);
+}
 
 void setup() {
     Serial.begin(9600);
@@ -67,44 +63,140 @@ void setup() {
     delay(1000);
 }
 
-void loop() {
-    digitalWrite(led, HIGH);
-    pinMode(trigger, INPUT);
-
-    for (int x = 10; x > 0; --x) {
-        digitalWrite(led, (uint8_t) x % 2);
-        delay(1000);
-    }
-
-    if (i % 3 == 0) {
-        SendGPS();
-        delay(1000);
-    }
-    else {
-        SendGPS();
-        delay(1000);
-        //Send2TP();
-    }
-
-    delay(100);
-    TurnOffFona();
-    delay(1000);
-    pinMode(trigger, OUTPUT);
-    digitalWrite(led, LOW);
-    i++;
-
-    sleepabit(3350);
+void flushSerial() {
+    while (Serial.available())
+        Serial.read();
 }
 
+void GetDisconnected() {
+    fona.enableGPRS(false);
+    Serial.println(F("GPRS Serivces Stopped"));
+}
+
+void TurnOnFona() {
+    Serial.println(F("Turning on Fona: "));
+    while (digitalRead(FONA_PS) == LOW) {
+        digitalWrite(FONA_KEY, LOW);
+    }
+    digitalWrite(FONA_KEY, HIGH);
+}
+
+void sleepabit(int howlong) {
+    int i2 = 0;
+    delay(100);
+    while (i2 < (howlong / 8)) {
+        cli();
+        delay(100);
+        // disable ADC
+        //ADCSRA = 0;
+        //prepare interrupts
+        WDTCSR |= (1 << WDCE) | (1 << WDE);
+        // Set Watchdog settings:
+        WDTCSR = (1 << WDIE) | (1 << WDE) | (1 << WDP3) | (0 << WDP2) | (0 << WDP1) | (1 << WDP0);
+        sei();
+        //wdt_reset();
+        set_sleep_mode (SLEEP_MODE_PWR_DOWN);
+        sleep_enable();
+        // turn off brown-out enable in software
+        //MCUCR = bit (BODS) | bit (BODSE);
+        //MCUCR = bit (BODS);
+        sleep_cpu ();
+        // cancel sleep as a precaution
+        sleep_disable();
+        i2++;
+    }
+    wdt_disable();
+}
+
+/* TODO check unused function
+boolean SendATCommand(char Command[], char Value1, char Value2) {
+    unsigned char buffer[64];
+    unsigned long TimeOut = 20000;
+    int count = 0;
+    int complete = 0;
+    unsigned long commandClock = millis();
+    fona.println(Command);
+    while (!complete && commandClock <= millis() + TimeOut) {
+        while (!fona.available() && commandClock <= millis() + TimeOut);
+        while (fona.available()) {
+            buffer[count++] = fona.read();
+            if (count == 64) break;
+        }
+        //Serial.write(buffer, count);
+        for (int i = 0; i <= count; i++) {
+            if (buffer[i] == Value1 && buffer[i + 1] == Value2) complete = 1;
+        }
+    }
+    if (complete == 1) return 1;
+    else return 0;
+}
+*/
+
+
+void GetConnected() {
+    long elapsedTime;
+    uint8_t n = 0;
+    long startTime;
+    startTime = millis(); //start time of the try
+    do {
+        n = fona.getNetworkStatus();  // Read the Network / Cellular Status
+        Serial.print(F("Network status "));
+        Serial.print(n);
+        Serial.print(F(": "));
+        switch (n) {
+            case 0:
+                Serial.println(F("Not registered"));
+                break;
+            case 1:
+                Serial.println(F("Registered (home)"));
+                break;
+            case 2:
+                Serial.println(F("Not registered (searching)"));
+                break;
+            case 3:
+                Serial.println(F("Denied"));
+                break;
+            default:
+            case 4:
+                Serial.println(F("Unknown"));
+                break;
+            case 5:
+                Serial.println(F("Registered roaming"));
+                break;
+
+        }
+        elapsedTime = millis() - startTime;
+        if (elapsedTime > 80000) {
+            delay(1000);
+            TurnOffFona();
+            pinMode(trigger, OUTPUT);
+            digitalWrite(led, LOW);
+            sleepabit(1800); //if we don't get on the network we will sleep a bit
+            startTime = millis(); //reset start-time
+            digitalWrite(led, HIGH);
+            pinMode(trigger, INPUT);
+            TurnOnFona();
+            delay(100);
+            fona.begin(myfona);
+            //break;
+        }
+        ////wdt_reset();
+    }
+        //be careful - this is code expects a SIM that registeres as roaming - change this to "1" if your SIM is registering normally
+    while (n != 5);
+    //if (n !=5)
+    //sleepabit(3600);
+    ////wdt_reset();
+}
 
 void SendGPS() {
     //prepare sensor data
     unsigned int red1 = RGB_sensor.readRed();
     unsigned int green1 = RGB_sensor.readGreen();
     unsigned int blue1 = RGB_sensor.readBlue();
-    unsigned int red = sqrt(sqrt(red1 * red1 / 1));
-    unsigned int green = sqrt(sqrt(green1 * green1 / 1));
-    unsigned int blue = sqrt(sqrt(blue1 * blue1 / 1));
+    unsigned int red = (unsigned int) sqrt(sqrt(red1 * red1 / 1));
+    unsigned int green = (unsigned int) sqrt(sqrt(green1 * green1 / 1));
+    unsigned int blue = (unsigned int) sqrt(sqrt(blue1 * blue1 / 1));
     char value_red[3 + 1];
     char value_green[3 + 1];
     char value_blue[3 + 1];
@@ -197,93 +289,30 @@ void SendGPS() {
     TurnOffFona();
 }
 
+void loop() {
+    digitalWrite(led, HIGH);
+    pinMode(trigger, INPUT);
 
-boolean SendATCommand(char Command[], char Value1, char Value2) {
-    unsigned char buffer[64];
-    unsigned long TimeOut = 20000;
-    int count = 0;
-    int complete = 0;
-    unsigned long commandClock = millis();
-    fona.println(Command);
-    while (!complete && commandClock <= millis() + TimeOut) {
-        while (!fona.available() && commandClock <= millis() + TimeOut);
-        while (fona.available()) {
-            buffer[count++] = fona.read();
-            if (count == 64) break;
-        }
-        //Serial.write(buffer, count);
-        for (int i = 0; i <= count; i++) {
-            if (buffer[i] == Value1 && buffer[i + 1] == Value2) complete = 1;
-        }
+    if (i % 3 == 0) {
+        SendGPS();
+        delay(1000);
     }
-    if (complete == 1) return 1;
-    else return 0;
-}
-
-
-void GetConnected() {
-    long elapsedTime;
-    uint8_t n = 0;
-    long startTime;
-    startTime = millis(); //start time of the try
-    do {
-        n = fona.getNetworkStatus();  // Read the Network / Cellular Status
-        Serial.print(F("Network status "));
-        Serial.print(n);
-        Serial.print(F(": "));
-        if (n == 0) Serial.println(F("Not registered"));
-        if (n == 1) Serial.println(F("Registered (home)"));
-        if (n == 2) Serial.println(F("Not registered (searching)"));
-        if (n == 3) Serial.println(F("Denied"));
-        if (n == 4) Serial.println(F("Unknown"));
-        if (n == 5) Serial.println(F("Registered roaming"));
-        elapsedTime = millis() - startTime;
-        if (elapsedTime > 80000) {
-            delay(1000);
-            TurnOffFona();
-            pinMode(trigger, OUTPUT);
-            digitalWrite(led, LOW);
-            sleepabit(1800); //if we don't get on the network we will sleep a bit
-            startTime = millis(); //reset start-time
-            digitalWrite(led, HIGH);
-            pinMode(trigger, INPUT);
-            TurnOnFona();
-            delay(100);
-            fona.begin(myfona);
-            //break;
-        }
-        ////wdt_reset();
+    else {
+        SendGPS();
+        delay(1000);
+        //Send2TP();
     }
-    while (n !=
-           5); //be careful - this is code expects a SIM that registeres as roaming - change this to "1" if your SIM is registering normally
-    //if (n !=5)
-    //sleepabit(3600);
-    ////wdt_reset();
+
+    delay(100);
+    TurnOffFona();
+    delay(1000);
+    pinMode(trigger, OUTPUT);
+    digitalWrite(led, LOW);
+    i++;
+
+    sleepabit(3350);
 }
 
-void GetDisconnected() {
-    fona.enableGPRS(false);
-    Serial.println(F("GPRS Serivces Stopped"));
-}
-
-void TurnOnFona() {
-    Serial.println(F("Turning on Fona: "));
-    while (digitalRead(FONA_PS) == LOW) {
-        digitalWrite(FONA_KEY, LOW);
-    }
-    digitalWrite(FONA_KEY, HIGH);
-}
-
-void TurnOffFona() {
-    Serial.println(F("Turning off Fona "));
-    fona.println("AT+CPOWD=1");
-//    while (digitalRead(FONA_PS) == HIGH) {
-//        Serial.println(digitalRead(FONA_PS));
-//        digitalWrite(FONA_KEY, LOW);
-//        //delay(100);
-//    }
-//    digitalWrite(FONA_KEY, HIGH);
-}
 
 int get_int_len(int value) {
     int l = 1;
@@ -294,32 +323,6 @@ int get_int_len(int value) {
     return l;
 }
 
-void sleepabit(int howlong) {
-    int i2 = 0;
-    delay(100);
-    while (i2 < (howlong / 8)) {
-        cli();
-        delay(100);
-        // disable ADC
-        //ADCSRA = 0;
-        //prepare interrupts
-        WDTCSR |= (1 << WDCE) | (1 << WDE);
-        // Set Watchdog settings:
-        WDTCSR = (1 << WDIE) | (1 << WDE) | (1 << WDP3) | (0 << WDP2) | (0 << WDP1) | (1 << WDP0);
-        sei();
-        //wdt_reset();
-        set_sleep_mode (SLEEP_MODE_PWR_DOWN);
-        sleep_enable();
-        // turn off brown-out enable in software
-        //MCUCR = bit (BODS) | bit (BODSE);
-        //MCUCR = bit (BODS);
-        sleep_cpu ();
-        // cancel sleep as a precaution
-        sleep_disable();
-        i2++;
-    }
-    wdt_disable();
-}
 // watchdog interrupt
 ISR (WDT_vect) {
     //i++;
@@ -332,7 +335,3 @@ int freeRam() {
     return (int) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval);
 }
 
-void flushSerial() {
-    while (Serial.available())
-        Serial.read();
-}

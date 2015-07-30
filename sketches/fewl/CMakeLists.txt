@@ -31,5 +31,6 @@ if(GIT_FOUND)
             COMMAND ${GIT_EXECUTABLE} clone https://github.com/sparkfun/ISL29125_Breakout
             WORKING_DIRECTORY ${MYLIBS})
     endif()
-
+else()
+    message(FATAL_ERROR "Missing git, please install and try again!")
 endif()

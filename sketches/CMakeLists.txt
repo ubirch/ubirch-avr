@@ -40,7 +40,7 @@ if(DEFINED ARDUINO_SDK_PATH AND IS_DIRECTORY ${ARDUINO_SDK_PATH})
     endforeach()
 
     # add a sketch dependency by giving the target and a git url
-    function(add_sketch_dependency TARGET NAME URL)
+    function(target_sketch_library TARGET NAME URL)
         # try to install dependent libraries
         find_package(Git)
         if(GIT_FOUND)
@@ -72,7 +72,7 @@ if(DEFINED ARDUINO_SDK_PATH AND IS_DIRECTORY ${ARDUINO_SDK_PATH})
             message(FATAL_ERROR "Missing git, please install and try again!")
         endif()
         target_link_libraries(${TARGET} ${NAME})
-    endfunction(add_sketch_dependency)
+    endfunction(target_sketch_library)
 
     # finally add all the sketches
     file(GLOB SRC_DIRS "*/CMakeLists.txt")

@@ -5,9 +5,10 @@ add_executable_avr(fewl fewl.cpp)
 target_link_libraries(fewl SoftwareSerial)
 
 # special external dependencies can be added like this and will be downloaded once
-add_sketch_dependency(fewl Adafruit_FONA_Library https://github.com/adafruit/Adafruit_FONA_Library)
-add_sketch_dependency(fewl Adafruit_SleepyDog https://github.com/adafruit/Adafruit_SleepyDog)
-add_sketch_dependency(fewl ISL29125_Breakout https://github.com/sparkfun/ISL29125_Breakout)
+# arguments: <target> <name> <git url>
+target_sketch_library(fewl Adafruit_FONA_Library https://github.com/adafruit/Adafruit_FONA_Library)
+target_sketch_library(fewl Adafruit_SleepyDog https://github.com/adafruit/Adafruit_SleepyDog)
+target_sketch_library(fewl ISL29125_Breakout https://github.com/sparkfun/ISL29125_Breakout)
 
 # copy the config.h.template to config.h in case it is not there; it is ignored by .git!
 if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/config.h")

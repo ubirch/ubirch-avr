@@ -13,9 +13,11 @@ set(PROG_TYPE     arduino)
 # simavr
 #set(PROG_DEV     /tmp/simavr-uart0)
 # Baite programmer
-set(PROG_DEV     /dev/cu.SLAB_USBtoUART)
+#set(PROG_DEV     /dev/cu.SLAB_USBtoUART)
 # the microview programmer
 #set(PROG_DEV     /dev/cu.usbserial-DA00UCWL)
+# the arduino uno usb
+set(PROG_DEV    /dev/cu.usbmodem1411)
 
 set(MONITOR      screen)
 set(MONITOR_ARGS ${PROG_DEV} ${BAUD})

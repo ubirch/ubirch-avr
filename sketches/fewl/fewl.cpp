@@ -26,15 +26,27 @@ Adafruit_FONA fona = Adafruit_FONA(FONA_RST);
 
 int i = 1; //loop counter
 
+void TurnOnFona() {
+    Serial.println(F("FONA: TURNING ON"));
+
+    do {
+        digitalWrite(FONA_KEY, HIGH);
+        delay(10);
+        digitalWrite(FONA_KEY, LOW);
+        delay(1100);
+        digitalWrite(FONA_KEY, HIGH);
+        delay(2000);
+        Serial.print(digitalRead(FONA_PS) ? '!' : '.');
+    } while (digitalRead(FONA_PS) == LOW);
+    Serial.println(F("FONA: IS ON"));
+}
+
 void TurnOffFona() {
-    Serial.println(F("Turning off Fona "));
+    Serial.println(F("FONA: TURNING OFF"));
     fona.println("AT+CPOWD=1");
-//    while (digitalRead(FONA_PS) == HIGH) {
-//        Serial.println(digitalRead(FONA_PS));
-//        digitalWrite(FONA_KEY, LOW);
-//        //delay(100);
-//    }
-//    digitalWrite(FONA_KEY, HIGH);
+    do { digitalWrite(FONA_KEY, LOW); } while (digitalRead(FONA_PS) == HIGH);
+    digitalWrite(FONA_KEY, HIGH);
+    Serial.println(F("FONA: IS OFF"));
 }
 
 void setup() {
@@ -68,18 +80,6 @@ void flushSerial() {
         Serial.read();
 }
 
-void GetDisconnected() {
-    fona.enableGPRS(false);
-    Serial.println(F("GPRS Serivces Stopped"));
-}
-
-void TurnOnFona() {
-    Serial.println(F("Turning on Fona: "));
-    while (digitalRead(FONA_PS) == LOW) {
-        digitalWrite(FONA_KEY, LOW);
-    }
-    digitalWrite(FONA_KEY, HIGH);
-}
 
 void sleepabit(int howlong) {
     int i2 = 0;
@@ -132,6 +132,10 @@ boolean SendATCommand(char Command[], char Value1, char Value2) {
 }
 */
 
+void GetDisconnected() {
+    fona.enableGPRS(false);
+    Serial.println(F("GPRS Serivces Stopped"));
+}
 
 void GetConnected() {
     long elapsedTime;
@@ -156,12 +160,14 @@ void GetConnected() {
             case 3:
                 Serial.println(F("Denied"));
                 break;
-            default:
             case 4:
                 Serial.println(F("Unknown"));
                 break;
             case 5:
                 Serial.println(F("Registered roaming"));
+                break;
+            default:
+                Serial.println(F("???"));
                 break;
 
         }
@@ -194,15 +200,15 @@ void SendGPS() {
     unsigned int red1 = RGB_sensor.readRed();
     unsigned int green1 = RGB_sensor.readGreen();
     unsigned int blue1 = RGB_sensor.readBlue();
-    unsigned int red = (unsigned int) sqrt(sqrt(red1 * red1 / 1));
-    unsigned int green = (unsigned int) sqrt(sqrt(green1 * green1 / 1));
-    unsigned int blue = (unsigned int) sqrt(sqrt(blue1 * blue1 / 1));
+//    unsigned int red = (unsigned int) sqrt(sqrt(red1 * red1 / 1));
+//    unsigned int green = (unsigned int) sqrt(sqrt(green1 * green1 / 1));
+//    unsigned int blue = (unsigned int) sqrt(sqrt(blue1 * blue1 / 1));
     char value_red[3 + 1];
     char value_green[3 + 1];
     char value_blue[3 + 1];
-    sprintf(value_red, "%d", red);
-    sprintf(value_green, "%d", green);
-    sprintf(value_blue, "%d", blue);
+    sprintf(value_red, "%d", red1 >> 8);
+    sprintf(value_green, "%d", green1 >> 8);
+    sprintf(value_blue, "%d", blue1 >> 8);
 
     char replybuffer[80];
     uint16_t returncode;

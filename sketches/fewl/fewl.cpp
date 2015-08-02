@@ -38,6 +38,7 @@ void TurnOnFona() {
         delay(2000);
         Serial.print(digitalRead(FONA_PS) ? '!' : '.');
     } while (digitalRead(FONA_PS) == LOW);
+    Serial.println();
     Serial.println(F("FONA: IS ON"));
 }
 
@@ -219,6 +220,20 @@ void SendGPS() {
     GetConnected();
     delay(3000);
     fona.enableGPRS(true);
+    while (fona.GPRSstate() == 0) Serial.print(".");
+    Serial.println("! GPRS OK");
+
+//    // force reconnect
+    if (fona.sendCheckReply(F("AT+SAPBR=3,1,\"APN\",\""
+                                      FONA_APN
+                                      "\""), F("OK")), -1)
+        Serial.println(F("FONA: APN SET"));
+    if (fona.sendCheckReply(F("AT+SAPBR=0,1"), F("OK")), -1) Serial.println(F("FONA: DISCONNECTED"));
+    if (fona.sendCheckReply(F("AT+SAPBR=1,1"), F("OK")), -1) Serial.println(F("FONA: CONNECTED"));
+
+    while (fona.GPRSstate() == 0) Serial.print(".");
+    Serial.println("! GPRS OK");
+
     delay(3000);
 
     //get battery status
@@ -265,8 +280,12 @@ void SendGPS() {
                 "&lat=", lat,
                 "&long=", lon);
         flushSerial();
+        Serial.println("URL:");
+        Serial.println(url);
         if (!fona.HTTP_GET_start(url, &statuscode, (uint16_t *) &length)) {
             Serial.println(F("Get Failed!"));
+            Serial.println(statuscode);
+            Serial.println(length);
         }
         fona.HTTP_GET_end();
     } //returncode 0 end
@@ -282,9 +301,13 @@ void SendGPS() {
                 "&field3=", value_blue,
                 "&field4=", value_bat,
                 "&field5=", loops);
+        Serial.println("URL (no GPS):");
+        Serial.println(url);
         flushSerial();
         if (!fona.HTTP_GET_start(url, &statuscode, (uint16_t *) &length)) {
             Serial.println(F("Get Failed!"));
+            Serial.println(statuscode);
+            Serial.println(length);
         }
         fona.HTTP_GET_end();
 

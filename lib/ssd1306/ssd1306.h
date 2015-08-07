@@ -1,11 +1,11 @@
 /**
- * oled example
+ * Functionality for the SSD1306 chip driver for OLED displays.
  *
  * @author Matthias L. Jugel
  *
- * == LICENSE ==
  * Copyright 2015 ubirch GmbH (http://www.ubirch.com)
  *
+ * == LICENSE ==
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -19,9 +19,13 @@
  * limitations under the License.
  */
 
-#ifndef UBIRCH_OLED_H
-#define UBIRCH_OLED_H
+#ifndef UBIRCH_SSD1306_H
+#define UBIRCH_SSD1306_H
 
+// the default controller device address
+#define OLED_DEVICE_ADDRESS     0x3d
+
+// =================================
 #define OLED_ADDRESSING_MODE    0x20
 
 #define OLED_ADDR_MODE_PAGE     0b10
@@ -71,5 +75,32 @@
 #define OLED_COM_PIN_CONFIG     0xDA
 
 #define OLED_VCOM_DESELECT      0xDB
+// =================================
 
-#endif //UBIRCH_OLED_H
+
+/**
+ * Reset the controller.
+ */
+void oled_reset(void);
+
+/**
+ * Send a command to the OLED display controller.
+ * @param address the controller i2c address
+ * @param data the command byte
+ */
+void oled_cmd(uint8_t address, uint8_t data);
+
+/**
+ * Send data to the OLED display controller.
+ * @param address the controller i2c address
+ * @param data the data byte
+ */
+void oled_data(uint8_t address, uint8_t data);
+
+/**
+ * Clear the display.
+ * @param address the controller i2c address
+ */
+void oled_clear(uint8_t address);
+
+#endif //UBIRCH_SSD1306_H

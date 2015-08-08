@@ -51,7 +51,7 @@ set(MONITOR                 ${SCREEN}               CACHE STRING  "serial monito
 set(MONITOR_ARGS            "${PROG_DEV} ${BAUD}"   CACHE STRING  "serial monitor arguments")
 
 set(COMPILER_FLAGS          "-Os -Wall -Wno-unknown-pragmas -Wextra -MMD -mmcu=${MCU} -DF_CPU=${F_CPU}" CACHE STRING "")
-set(CMAKE_C_FLAGS           "${COMPILER_FLAGS} -std=gnu99 -ffunction-sections -fdata-sections" CACHE STRING "")
+set(CMAKE_C_FLAGS           "${COMPILER_FLAGS} -std=gnu99 -mcall-prologues -ffunction-sections -fdata-sections" CACHE STRING "")
 set(CMAKE_CXX_FLAGS         "${COMPILER_FLAGS} -fno-exceptions -ffunction-sections -fdata-sections -fno-threadsafe-statics" CACHE STRING "")
 set(CMAKE_ASM_FLAGS         "-x assembler-with-cpp ${COMPILER_FLAGS} " CACHE STRING "")
 set(CMAKE_EXE_LINKER_FLAGS  "-Wl,--gc-sections ${EXTRA_LIBS}" CACHE STRING "")

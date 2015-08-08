@@ -3,10 +3,19 @@
 #=====================================================================================
 cmake_minimum_required(VERSION 3.0)
 
+# the toolchain file (see https://github.com/ubirch/avr-arduino-cmake)
+set(CMAKE_TOOLCHAIN_FILE cmake/avr-arduino-toolchain.cmake)
+
+# if you want to compile Arduino sketches, set this to the Arduino SDK dir (1.6.5)
+set(ARDUINO_SDK_PATH "/Applications/Arduino.app/Contents/Java" CACHE STRING "Arduino SDK Path")
+
+# project name and code types we use
+project (ubirch C CXX ASM)
+
 # necessary settings for the chip we use
-set(MCU   atmega328p)
-set(F_CPU 16000000)
-set(BAUD  115200)
+set(MCU         atmega328p)
+set(F_CPU       16000000)
+set(BAUD        115200)
 
 # set the programmer and the device to use (default is to use simavr)
 set(PROG_TYPE     arduino)
@@ -19,103 +28,13 @@ set(PROG_DEV     /dev/cu.SLAB_USBtoUART)
 # the arduino uno usb
 #set(PROG_DEV    /dev/cu.usbmodem1411)
 
-set(MONITOR      screen)
-set(MONITOR_ARGS ${PROG_DEV} ${BAUD})
-
 # only needed if we do floating point math and want to print floats with printf
 #set(EXTRA_LIBS "-lm -lprintf_flt")
 
-# if you want to compile Arduino sketches, set this to the Arduino SDK dir (1.6.5)
-set(ARDUINO_SDK_PATH "/Applications/Arduino.app/Contents/Java" CACHE STRING "Arduino SDK Path")
+# adding our libraries, sources
+add_libraries(lib)
+add_sources(src)
 
-#=====================================================================================
-# NO NEED TO CHANGE ANYTHING BELOW
-#=====================================================================================
-
-# program names
-find_program(AVRCPP   avr-g++)
-find_program(AVRC     avr-gcc)
-find_program(AVRSTRIP avr-strip)
-find_program(OBJCOPY  avr-objcopy)
-find_program(OBJDUMP  avr-objdump)
-find_program(AVRSIZE  avr-size)
-find_program(AVRDUDE  avrdude)
-
-# Sets the compiler
-# Needs to come before the project function
-set(CMAKE_SYSTEM_NAME  Generic)
-set(CMAKE_CXX_COMPILER ${AVRCPP})
-set(CMAKE_C_COMPILER   ${AVRC})
-set(CMAKE_ASM_COMPILER ${AVRC})
-
-project (ubirch C CXX ASM)
-
-# Important project paths
-set(BASE_PATH "${${PROJECT_NAME}_SOURCE_DIR}")
-set(SRC_PATH  "${BASE_PATH}/src")
-set(LIB_PATH  "${BASE_PATH}/lib")
-
-add_definitions(-DF_CPU=${F_CPU}L)
-add_definitions(-DARDUINO=10605)
-add_definitions(-DARDUINO_AVR_UNO)
-add_definitions(-DARDUINO_ARCH_AVR)
-
-set(COMPILER_FLAGS "-g -Os -Wall -Wno-unknown-pragmas -Wextra -MMD -mmcu=${MCU}")
-
-set(CMAKE_C_FLAGS          "${COMPILER_FLAGS} -std=gnu99 -ffunction-sections -fdata-sections")
-set(CMAKE_CXX_FLAGS        "${COMPILER_FLAGS} -fno-exceptions -ffunction-sections -fdata-sections -fno-threadsafe-statics")
-set(CMAKE_ASM_FLAGS        "-x assembler-with-cpp ${COMPILER_FLAGS} ")
-set(CMAKE_EXE_LINKER_FLAGS "-Wl,--gc-sections")
-
-# we need a little function to add multiple targets
-function(add_executable_avr NAME)
-    add_executable(${NAME} ${ARGN})
-    set_target_properties(${NAME} PROPERTIES OUTPUT_NAME "${NAME}.elf")
-    set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${NAME}.hex;${NAME}.eep;${NAME}.lst")
-
-    # generate the .hex file
-    add_custom_command(
-        OUTPUT ${NAME}.hex
-        COMMAND ${AVRSTRIP} "${NAME}.elf"
-        COMMAND ${OBJCOPY} -O ihex -j .eeprom --set-section-flags=.eeprom=alloc,load --no-change-warnings --change-section-lma .eeprom=0 "${NAME}.elf" "${NAME}.eep"
-        COMMAND ${OBJCOPY} -O ihex -R .eeprom "${NAME}.elf" "${NAME}.hex"
-        COMMAND ${AVRSIZE} --mcu=${MCU} -C --format=avr "${NAME}.elf"
-        DEPENDS ${NAME})
-    add_custom_target(${NAME}-strip ALL DEPENDS ${NAME}.hex)
-
-    # flash the produces binary
-    add_custom_target(
-        ${NAME}-flash
-        COMMAND ${AVRDUDE} -q -D -c ${PROG_TYPE} -P ${PROG_DEV} -b ${BAUD} -p ${MCU} -U flash:w:${NAME}.hex
-        DEPENDS ${NAME}.hex )
-    add_custom_target(
-        ${NAME}-monitor
-        COMMAND ${MONITOR} ${MONITOR_ARGS})
-endfunction(add_executable_avr)
-
-
-# add all the libraries as possible library dependencies
-set(PROJECT_LIBS)
-file(GLOB LIB_DIRS "${LIB_PATH}/*/CMakeLists.txt")
-foreach(cmakedir ${LIB_DIRS})
-    get_filename_component(subdir ${cmakedir} PATH)
-    if(IS_DIRECTORY ${subdir})
-        get_filename_component(target ${subdir} NAME)
-        message(STATUS "Adding ubirch avr library: ${target}")
-        add_subdirectory(${subdir})
-    endif()
-endforeach()
-
-# add targets automatically
-file(GLOB SRC_DIRS "${SRC_PATH}/*/CMakeLists.txt")
-foreach(cmakedir ${SRC_DIRS})
-    get_filename_component(subdir ${cmakedir} PATH)
-    if(IS_DIRECTORY ${subdir})
-        get_filename_component(target ${subdir} NAME)
-        message(STATUS "Found ubirch avr target: ${target}")
-        add_subdirectory(${subdir})
-    endif()
-endforeach()
-
-# also add the sketches
-add_subdirectory(sketches)
+# add the sketches directory (contains sketch directories and a "libraries" dir where dependent
+# libs are extracted
+add_sketches(sketches)

@@ -119,7 +119,7 @@ if(DEFINED ENV{ARDUINO_SDK_PATH})
 endif()
 
 # only prepare the toolchain
-if( DEFINED ARDUINO_SDK_PATH AND IS_DIRECTORY ${ARDUINO_SDK_PATH})
+if(NOT(TARGET arduin-core) AND DEFINED ARDUINO_SDK_PATH AND IS_DIRECTORY ${ARDUINO_SDK_PATH})
     # set the paths
     set(ARDUINO_CORES_PATH ${ARDUINO_SDK_PATH}/hardware/arduino/avr/cores/arduino)
     set(ARDUINO_VARIANTS_PATH ${ARDUINO_SDK_PATH}/hardware/arduino/avr/variants/standard)
@@ -162,12 +162,10 @@ if( DEFINED ARDUINO_SDK_PATH AND IS_DIRECTORY ${ARDUINO_SDK_PATH})
             endif()
         endif()
     endforeach()
-
-    set(ARDUINO_SDK_FOUND TRUE CACHE BOOLEAN "whether the Arduino IDE/SDK is found and configured")
 endif()
 
 function(add_sketches SKETCHES_PATH)
-    if(DEFINED ARDUINO_SDK_FOUND)
+    if(TARGET arduino-core)
         # finally add all the sketches
         file(GLOB SRC_DIRS "${SKETCHES_PATH}/*/CMakeLists.txt")
         foreach(cmakedir ${SRC_DIRS})
@@ -186,7 +184,7 @@ endfunction()
 set(SKETCH_LIBS "" CACHE INTERNAL "arduino sketch libraries")
 # add a sketch dependency by giving the target and a git url
 function(target_sketch_library TARGET NAME URL)
-    if(DEFINED ARDUINO_SDK_FOUND)
+    if(TARGET arduino-core)
         if(NOT TARGET ${NAME})
             # try to install dependent libraries
             find_package(Git)

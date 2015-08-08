@@ -1,7 +1,7 @@
 /**
  * This sketch combines the ultra-sonic sensor code with what I learned
  * from working with interrupts. The measurement is done concurrently
- * in an interrupt handler and the main loop just takes the measnured
+ * in an interrupt handler and the main loop just takes the measured
  * distance from a global variable.
  *
  * The use of pulseIn() is not possible as it blocks the whole operation.

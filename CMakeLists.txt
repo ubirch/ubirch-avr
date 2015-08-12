@@ -18,7 +18,7 @@ set(F_CPU       16000000)
 set(BAUD        115200)
 
 # set the programmer and the device to use (default is to use simavr)
-set(PROG_TYPE     arduino)
+set(PROG_TYPE     usbasp)
 # simavr
 #set(PROG_DEV     /tmp/simavr-uart0)
 # Baite programmer

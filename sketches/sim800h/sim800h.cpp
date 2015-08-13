@@ -32,6 +32,10 @@
 #include <Arduino.h>
 #include <SoftwareSerial.h>
 
+#ifndef BAUD
+#   define BAUD 115200
+#endif
+
 #define WATCHDOG 6
 #define SIM800H_RX 2
 #define SIM800H_TX 3
@@ -43,7 +47,7 @@ void setup() {
     pinMode(WATCHDOG, OUTPUT);
 
     // setup baud rates for serial and modem
-    Serial.begin(115200);
+    Serial.begin(BAUD);
     sim800h.begin(19200);
 
     cli();

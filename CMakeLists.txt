@@ -15,18 +15,11 @@ project (ubirch C CXX ASM)
 # necessary settings for the chip we use
 set(MCU         atmega328p)
 set(F_CPU       16000000)
-set(BAUD        115200)
+set(BAUD 19200)
 
 # set the programmer and the device to use (default is to use simavr)
-set(PROG_TYPE     usbasp)
-# simavr
-#set(PROG_DEV     /tmp/simavr-uart0)
-# Baite programmer
-set(PROG_DEV     /dev/cu.SLAB_USBtoUART)
-# the microview programmer
-#set(PROG_DEV     /dev/cu.usbserial-DA00UCWL)
-# the arduino uno usb
-#set(PROG_DEV    /dev/cu.usbmodem1411)
+set(PROGRAMMER usbasp)
+set(SERIAL_DEV /dev/cu.SLAB_USBtoUART)
 
 # only needed if we do floating point math and want to print floats with printf
 #set(EXTRA_LIBS "-lm -lprintf_flt")

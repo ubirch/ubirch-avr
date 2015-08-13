@@ -11,6 +11,10 @@
 #include <avr/sleep.h>
 #include <avr/wdt.h>
 
+#ifndef BAUD
+#   define BAUD 9600
+#endif
+
 SFE_ISL29125 RGB_sensor;
 
 #define FONA_RX 2
@@ -51,7 +55,7 @@ void TurnOffFona() {
 }
 
 void setup() {
-    Serial.begin(9600);
+    Serial.begin(BAUD);
     myfona.begin(9600);
     fona.begin(myfona);
 

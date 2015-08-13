@@ -50,7 +50,7 @@ the [Arduino SDK](https://www.arduino.cc/en/Main/Software) and set the environme
 
 ### Make
 
-1. Edit CMakeLists.txt and set PROG_TYPE and PROG_DEV to your flash programmer and device.
+1. Edit CMakeLists.txt and set PROGRAMMER and SERIAL_DEV to your flash programmer and device.
 2. follow the following procedure:
 
 ```
@@ -90,7 +90,7 @@ uart_pty_init bridge on port *** /dev/ttys005 ***
 uart_pty_connect: /tmp/simavr-uart0 now points to /dev/ttys005
 ```
 
-Edit ```CMakeLists.txt``` to set the correct PROG_DEV and then just follow the instructions above.
+Edit ```CMakeLists.txt``` to set the correct SERIAL_DEV and then just follow the instructions above.
 
 ## Library Code
 

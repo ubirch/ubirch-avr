@@ -43,18 +43,23 @@ set(SRC_PATH                "${BASE_PATH}/src")
 set(LIB_PATH                "${BASE_PATH}/lib")
 
 # necessary settings for the chip we use
-set(MCU                     "atmega328p"            CACHE STRING  "CPU type")
+set(MCU atmega328p CACHE STRING "CPU type")
 set(F_CPU                   16000000                CACHE INTEGER "CPU frequency")
 set(BAUD                    115200                  CACHE INTEGER "UART baud rate")
-set(PROG_TYPE               "arduino"               CACHE STRING  "programmer type")
+set(PROGRAMMER arduino CACHE STRING "programmer type")
 set(MONITOR                 ${SCREEN}               CACHE STRING  "serial monitor program")
-set(MONITOR_ARGS            "${PROG_DEV} ${BAUD}"   CACHE STRING  "serial monitor arguments")
+set(MONITOR_ARGS ${SERIAL_DEV} ${BAUD} CACHE STRING "serial monitor arguments")
 
 set(COMPILER_FLAGS          "-Os -Wall -Wno-unknown-pragmas -Wextra -MMD -mmcu=${MCU} -DF_CPU=${F_CPU}" CACHE STRING "")
 set(CMAKE_C_FLAGS           "${COMPILER_FLAGS} -std=gnu99 -mcall-prologues -ffunction-sections -fdata-sections" CACHE STRING "")
 set(CMAKE_CXX_FLAGS         "${COMPILER_FLAGS} -fno-exceptions -ffunction-sections -fdata-sections -fno-threadsafe-statics" CACHE STRING "")
 set(CMAKE_ASM_FLAGS         "-x assembler-with-cpp ${COMPILER_FLAGS} " CACHE STRING "")
 set(CMAKE_EXE_LINKER_FLAGS  "-Wl,--gc-sections ${EXTRA_LIBS}" CACHE STRING "")
+
+# some definitions that are common
+add_definitions(-DMCU=${MCU})
+add_definitions(-DF_CPU=${F_CPU})
+add_definitions(-DBAUD=${BAUD})
 
 # we need a little function to add multiple targets
 function(add_executable_avr NAME)
@@ -72,10 +77,16 @@ function(add_executable_avr NAME)
         DEPENDS ${NAME})
     add_custom_target(${NAME}-strip ALL DEPENDS ${NAME}.hex)
 
+    if (PROGRAMMER STREQUAL "usbasp")
+        set(AVRDUDE_ARGS -c${PROGRAMMER} -p${MCU} -Pusb)
+    else()
+        set(AVRDUDE_ARGS -c${PROGRAMMER} -p${MCU} -P${SERIAL_DEV} -b${BAUD})
+    endif ()
+
     # flash the produces binary
     add_custom_target(
         ${NAME}-flash
-        COMMAND ${AVRDUDE} -q -D -c ${PROG_TYPE} -p ${MCU} -P ${PROG_DEV} -b ${BAUD} -B8 -U flash:w:${NAME}.hex
+            COMMAND ${AVRDUDE} ${AVRDUDE_ARGS} -U flash:w:${NAME}.hex
         DEPENDS ${NAME}.hex )
     add_custom_target(
         ${NAME}-monitor

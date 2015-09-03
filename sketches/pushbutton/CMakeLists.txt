@@ -8,6 +8,5 @@ target_link_libraries(pushbutton SoftwareSerial)
 # arguments: <target> <name> <git url>
 target_sketch_library(pushbutton Adafruit_FONA_Library https://github.com/adafruit/Adafruit_FONA_Library)
 target_sketch_library(pushbutton Adafruit_SleepyDog https://github.com/adafruit/Adafruit_SleepyDog)
-target_sketch_library(pushbutton Adafruit_NeoPixel https://github.com/adafruit/Adafruit_NeoPixel)
-#target_sketch_library(pushbutton FastLED https://github.com/FastLED/FastLED)
+target_sketch_library(pushbutton FastLED https://github.com/FastLED/FastLED)
 

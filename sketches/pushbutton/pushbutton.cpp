@@ -22,7 +22,6 @@ CRGB leds[NUM_LEDS];
 int GameCount;
 int WonLost[11];
 long Abstand[11];
-//int
 long Accuracy;
 int Status;
 int OldStatus;
@@ -31,10 +30,10 @@ long RefTime;
 long StopTime;
 long ResultTime;
 long TimeSpan;
-char results[12] = "";
+char results[] = "          ";
 
 int flag2 = 1;
-char userid[] = "99"; //which player are whe?
+char userid[] = "12"; //which player are whe?
 
 SoftwareSerial myfona = SoftwareSerial(FONA_TX, FONA_RX);
 Adafruit_FONA fona = Adafruit_FONA(FONA_RST);
@@ -54,11 +53,17 @@ void TurnOffFona();
 void sleepabit(int howlong);
 
 void setup() {
+
+    DDRD |= _BV(PIND6);
+    wdt_disable();
+
     FastLED.addLeds<WS2812, DATA_PIN, RGB>(leds, NUM_LEDS);
     pinMode(TASTER_PIN, INPUT_PULLUP);
     leds[0] = CRGB::Black;
     FastLED.show();
-    Serial.begin(9600);
+    Serial.begin(BAUD);
+
+    Serial.println("START!");
     OldStatus = -1;
     Status = 0;
     StartTime = 0;
@@ -188,7 +193,7 @@ void loop() {
 
         delay(2000);
 
-        if (GameCount < 10) {
+        if (GameCount < 3) {
             GameCount++;
         }
         else {
@@ -205,6 +210,8 @@ void loop() {
 
 
 void UploadResults() {
+    leds[0] = CRGB::Yellow;
+    FastLED.show();
 
     uint16_t returncode;
     TurnOnFona();
@@ -232,7 +239,8 @@ void UploadResults() {
     GetDisconnected();
     delay(1000);
     TurnOffFona();
-
+    leds[0] = CRGB::Black;
+    FastLED.show();
 }
 
 
@@ -266,15 +274,15 @@ void GetConnected() {
     startTime = millis(); //start time of the try
     do {
         n = fona.getNetworkStatus();  // Read the Network / Cellular Status
-        //Serial.print(F("Network status "));
-        //Serial.print(n);
-        //Serial.print(F(": "));
-        if (n == 0);// Serial.println(F("Not registered"));
-        if (n == 1);// Serial.println(F("Registered (home)"));
-        if (n == 2);// Serial.println(F("Not registered (searching)"));
-        if (n == 3);// Serial.println(F("Denied"));
-        if (n == 4);// Serial.println(F("Unknown"));
-        if (n == 5);// Serial.println(F("Registered roaming"));
+        Serial.print(F("Network status "));
+        Serial.print(n);
+        Serial.print(F(": "));
+        if (n == 0) Serial.println(F("Not registered"));
+        if (n == 1) Serial.println(F("Registered (home)"));
+        if (n == 2) Serial.println(F("Not registered (searching)"));
+        if (n == 3) Serial.println(F("Denied"));
+        if (n == 4) Serial.println(F("Unknown"));
+        if (n == 5) Serial.println(F("Registered roaming"));
         elapsedTime = millis() - startTime;
         if (elapsedTime > 80000) {
             delay(1000);
@@ -287,7 +295,7 @@ void GetConnected() {
             pinMode(trigger, INPUT);
             TurnOnFona();
             delay(100);
-            myfona.begin(9600);
+            myfona.begin(BAUD);
             fona.begin(myfona);
             //break;
         }
@@ -301,11 +309,11 @@ void GetConnected() {
 
 void GetDisconnected() {
     fona.enableGPRS(false);
-    //Serial.println(F("GPRS Serivces Stopped"));
+    Serial.println(F("GPRS Serivces Stopped"));
 }
 
 void TurnOnFona() {
-    //Serial.println("Turning on Fona: ");
+    Serial.println("Turning on Fona: ");
     while (digitalRead(FONA_PS) == LOW) {
         digitalWrite(FONA_KEY, LOW);
     }
@@ -313,7 +321,7 @@ void TurnOnFona() {
 }
 
 void TurnOffFona() {
-    //Serial.println("Turning off Fona ");
+    Serial.println("Turning off Fona ");
     while (digitalRead(FONA_PS) == HIGH) {
         digitalWrite(FONA_KEY, LOW);
         //delay(100);
@@ -344,19 +352,18 @@ void sleepabit(int howlong) {
         WDTCSR = (1 << WDIE) | (1 << WDE) | (1 << WDP3) | (0 << WDP2) | (0 << WDP1) | (1 << WDP0);
         sei();
         //wdt_reset();
-        set_sleep_mode(SLEEP_MODE_PWR_DOWN);
+        set_sleep_mode (SLEEP_MODE_PWR_DOWN);
         sleep_enable();
         // turn off brown-out enable in software
         //MCUCR = bit (BODS) | bit (BODSE);
         //MCUCR = bit (BODS);
-        sleep_cpu();
+        sleep_cpu ();
         // cancel sleep as a precaution
         sleep_disable();
         i2++;
     }
     wdt_disable();
 }
-
 // watchdog interrupt
 ISR (WDT_vect) {
     //i++;

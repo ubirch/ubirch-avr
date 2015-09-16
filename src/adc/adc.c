@@ -20,8 +20,6 @@
  */
 
 
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wmissing-noreturn"
 
 #include <avr/io.h>
 #include <util/delay.h>
@@ -50,6 +48,9 @@ uint16_t adc_read(uint8_t ch) {
     return (ADC);
 }
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wmissing-noreturn"
+#pragma clang diagnostic ignored "-Wreturn-stack-address"
 void main() {
     UART_INIT_STDIO();
 

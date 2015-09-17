@@ -50,7 +50,7 @@ int main() {
             for (uint8_t j = 0; j < i; j++) printf("=\x1b[K");
             PORTB |= _BV(PORTB5);
         } else {
-            printf("\r\x1b[K");
+            if (i > 1) printf("\n");
             i = 0;
         }
         _delay_ms(500);

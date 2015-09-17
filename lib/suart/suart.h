@@ -16,9 +16,7 @@ extern void suart_putchar(const char, FILE *stream);
 
 #ifdef SUART_RXD
 
-extern int suart_getchar_wait();
-
-extern int suart_getchar_nowait();
+extern int suart_getchar();
 
 #define suart_getchar(s) suart_getchar_wait()
 

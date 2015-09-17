@@ -177,20 +177,11 @@ int uart_getc_nowait()
 
 #else // _FIFO_H_
 
-int suart_getchar_wait() {
+int suart_getchar(FILE *stream) {
     while (!received) { }
     received = 0;
 
     return (int) indata;
-}
-
-int suart_getchar_nowait() {
-    if (received) {
-        received = 0;
-        return (int) indata;
-    }
-
-    return -1;
 }
 
 #endif // _FIFO_H_

@@ -97,5 +97,5 @@ uint16_t mpr_baseline(uint8_t pin) {
 
 void mpr_threshold(uint8_t pin, uint8_t touch, uint8_t release) {
     i2c_write_reg(MPR_DEVICE_ADDRESS, MPR_R_TCH_THRESHOLD + 2 * pin, touch);
-    i2c_write_reg(MPR_DEVICE_ADDRESS, MPR_R_REL_THRESHOLD + 2 * pin, touch);
+    i2c_write_reg(MPR_DEVICE_ADDRESS, MPR_R_REL_THRESHOLD + 2 * pin, release);
 }

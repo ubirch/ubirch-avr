@@ -59,7 +59,7 @@ void setup() {
     TCCR1B = 0;
     TCNT1 = 0;
 
-    OCR1A = 16000000UL / 8 - 1; // every 128 microseconds
+    OCR1A = (uint16_t) (16000000UL / 8 - 1); // every 128 microseconds
     TCCR1B |= _BV(CS01); // prescale 8 selected (still fast enough)
     TCCR1B |= _BV(WGM12); // CTC mode
     TIMSK1 |= _BV(OCIE1A); // timer compare interrupt

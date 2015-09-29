@@ -51,7 +51,8 @@ uint16_t adc_read(uint8_t ch) {
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wmissing-noreturn"
 #pragma clang diagnostic ignored "-Wreturn-stack-address"
-void main() {
+
+int main(void) {
     UART_INIT_STDIO();
 
     DDRB |= _BV(PINB5);

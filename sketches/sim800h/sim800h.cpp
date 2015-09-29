@@ -31,6 +31,7 @@
 
 #include <Arduino.h>
 #include <SoftwareSerial.h>
+#include "config.h"
 
 #ifndef BAUD
 #   define BAUD 115200

@@ -31,7 +31,6 @@
 
 // disable asserts in non-debug code
 #include <i2c.h>
-#include <math.h>
 
 #ifndef NDEBUG
 #   ifdef i2c_assert
@@ -40,53 +39,12 @@
 #   define i2c_assert(e, m)
 #endif
 
-uint8_t isl_read(uint8_t reg) {
-    i2c_start();
-    i2c_write(ISL_DEVICE_ADDRESS << 1);
-    i2c_assert(I2C_STATUS_SLAW_ACK, "address error");
-    i2c_write(reg);
-    i2c_assert(I2C_STATUS_DATA_ACK, "device-id error");
-
-    i2c_start();
-    i2c_write((ISL_DEVICE_ADDRESS << 1) | 0x01);
-    i2c_assert(I2C_STATUS_SLAR_ACK, "address error");
-    uint8_t r = i2c_read(false);
-    i2c_assert(I2C_STATUS_RCVD_DATA_NACK, "data receive error");
-    i2c_stop();
-
-    return r;
-}
-
-uint16_t isl_read16(uint8_t reg) {
-    i2c_start();
-    i2c_write(ISL_DEVICE_ADDRESS << 1);
-    i2c_assert(I2C_STATUS_SLAW_ACK, "address error");
-    i2c_write(reg);
-    i2c_assert(I2C_STATUS_DATA_ACK, "device-id error");
-
-    i2c_start();
-    i2c_write((ISL_DEVICE_ADDRESS << 1) | 0x01);
-    i2c_assert(I2C_STATUS_SLAR_ACK, "address error");
-    uint16_t r = i2c_read(true) | (i2c_read(false) << 8);
-    i2c_assert(I2C_STATUS_RCVD_DATA_NACK, "data receive error");
-    i2c_stop();
-
-    return r;
-}
-
 void isl_set(uint8_t reg, uint8_t data) {
-    i2c_start();
-    i2c_write(ISL_DEVICE_ADDRESS << 1);
-    i2c_assert(I2C_STATUS_SLAW_ACK, "address error");
-    i2c_write(reg);
-    i2c_assert(I2C_STATUS_DATA_ACK, "register error");
-    i2c_write(data);
-    i2c_assert(I2C_STATUS_DATA_ACK, "value error");
-    i2c_stop();
+    i2c_write_reg(ISL_DEVICE_ADDRESS, reg, data);
 }
 
 uint8_t isl_get(uint8_t reg) {
-    return isl_read(reg);
+    return i2c_read_reg(ISL_DEVICE_ADDRESS, reg);
 }
 
 uint8_t isl_reset(void) {
@@ -97,32 +55,32 @@ uint8_t isl_reset(void) {
     i2c_assert(I2C_STATUS_DATA_ACK, "register error");
     i2c_stop();
 
-    if (isl_read(ISL_R_DEVICE_ID) != ISL_DEVICE_ID) return 0;
+    if (i2c_read_reg(ISL_DEVICE_ADDRESS, ISL_R_DEVICE_ID) != ISL_DEVICE_ID) return 0;
 
     uint8_t check = 0x00;
-    check |= isl_read(ISL_R_COLOR_MODE);
-    check |= isl_read(ISL_R_FILTERING);
-    check |= isl_read(ISL_R_INTERRUPT);
-    check |= isl_read(ISL_R_STATUS);
+    check |= i2c_read_reg(ISL_DEVICE_ADDRESS, ISL_R_COLOR_MODE);
+    check |= i2c_read_reg(ISL_DEVICE_ADDRESS, ISL_R_FILTERING);
+    check |= i2c_read_reg(ISL_DEVICE_ADDRESS, ISL_R_INTERRUPT);
+    check |= i2c_read_reg(ISL_DEVICE_ADDRESS, ISL_R_STATUS);
     if (check) return 0;
 
     return 1;
 }
 
 uint16_t isl_read_red(void) {
-    return isl_read16(ISL_R_RED_L);
+    return i2c_read_reg16(ISL_DEVICE_ADDRESS, ISL_R_RED_L);
 }
 
 uint16_t isl_read_green(void) {
-    return isl_read16(ISL_R_GREEN_L);
+    return i2c_read_reg16(ISL_DEVICE_ADDRESS, ISL_R_GREEN_L);
 }
 
 uint16_t isl_read_blue(void) {
-    return isl_read16(ISL_R_BLUE_L);
+    return i2c_read_reg16(ISL_DEVICE_ADDRESS, ISL_R_BLUE_L);
 }
 
 static inline uint8_t downsample(uint16_t c) {
-    return c >> ((isl_read(ISL_R_COLOR_MODE) & ISL_MODE_12BIT) ? 4 : 8);
+    return c >> ((i2c_read_reg(ISL_DEVICE_ADDRESS, ISL_R_COLOR_MODE) & ISL_MODE_12BIT) ? 4 : 8);
 }
 
 uint8_t isl_read_red8(void) {

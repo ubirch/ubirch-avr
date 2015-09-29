@@ -35,27 +35,13 @@ void oled_reset(void) {
 }
 
 
-void oled_cmd(uint8_t address, uint8_t data) {
-    i2c_start();
-    i2c_write(address << 1);
-    i2c_assert(I2C_STATUS_SLAW_ACK, "address error");
-    i2c_write(0x00);
-    i2c_assert(I2C_STATUS_DATA_ACK, "register error");
-    i2c_write(data);
-    i2c_assert(I2C_STATUS_DATA_ACK, "value error");
-    i2c_stop();
+void oled_cmd(uint8_t address, uint8_t command) {
+    i2c_write_reg(address, 0x00, command);
 }
 
 
 void oled_data(uint8_t address, uint8_t data) {
-    i2c_start();
-    i2c_write(address << 1);
-    i2c_assert(I2C_STATUS_SLAW_ACK, "address error");
-    i2c_write(0x40);
-    i2c_assert(I2C_STATUS_DATA_ACK, "register error");
-    i2c_write(data);
-    i2c_assert(I2C_STATUS_DATA_ACK, "value error");
-    i2c_stop();
+    i2c_write_reg(address, 0x40, data);
 }
 
 //== higher level functions ================================

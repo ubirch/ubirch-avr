@@ -21,7 +21,7 @@
 
 #include "uart.h"
 #include "uart_stdio.h"
-#include "i2c.h"
+#include "i2c_core.h"
 #include "dbg_utils.h"
 
 #include <util/delay.h>
@@ -29,6 +29,7 @@
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wmissing-noreturn"
+#pragma clang diagnostic ignored "-Wreturn-stack-address"
 int main(void) {
     UART_INIT_STDIO();
 

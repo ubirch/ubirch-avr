@@ -84,9 +84,8 @@ int uart_putchar(char c, FILE *stream) {
  * Successive calls to uart_getchar() will be satisfied from the
  * internal buffer until that buffer is emptied again.
  */
-int
-uart_getchar(FILE *stream) {
-    char c;
+int uart_getchar(FILE *stream) {
+    uint8_t c;
     char *cp, *cp2;
     static char b[RX_BUFSIZE];
     static char *rxp;

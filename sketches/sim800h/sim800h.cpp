@@ -39,6 +39,8 @@
 #define WATCHDOG 6
 #define SIM800H_RX 2
 #define SIM800H_TX 3
+#define SIM800H_KEY 7
+#define SIM800H_PS 8
 
 SoftwareSerial sim800h = SoftwareSerial(SIM800H_TX, SIM800H_RX);
 
@@ -57,7 +59,7 @@ void setup() {
     TCCR1B = 0;
     TCNT1 = 0;
 
-    OCR1A = 16000000UL / 8 / 4 - 1; // every 128 microseconds
+    OCR1A = 16000000UL / 8 - 1; // every 128 microseconds
     TCCR1B |= _BV(CS01); // prescale 8 selected (still fast enough)
     TCCR1B |= _BV(WGM12); // CTC mode
     TIMSK1 |= _BV(OCIE1A); // timer compare interrupt
@@ -71,22 +73,46 @@ void setup() {
     // AT+CREG? - display information on network registration
     // AT+CMGF=1 - SMS text mode
     // AT+CMGL="ALL" - list all available SMS
-    sim800h.println(F("ATI;+CREG?;+CMGF=1;+CMGL=\"ALL\";E1"));
-    sim800h.println(F("AT+CGATT=1"));
-    delay(1000);
-    sim800h.println(F("AT+SMTPSRV=mail.jugel.info,25"));
-    delay(1000);
-    sim800h.println(F("AT+SMTPFROM=leo@ubirch.com,leo"));
-    delay(1000);
-    sim800h.println(F("AT+SMTPRCPT=0,0,trigger@recipe.ifttt.com"));
-    delay(1000);
-    sim800h.println(F("AT+SMTPSUB=ubirch no1 here"));
-    delay(1000);
-    sim800h.println(F("AT+SMTPBODY=12"));
+
+//    // check if the chip is already awake, otherwise start wakeup
+//    pinMode(SIM800H_KEY, OUTPUT);
+//    do {
+//        digitalWrite(SIM800H_KEY, HIGH);
+//        delay(10);
+//        digitalWrite(SIM800H_KEY, LOW);
+//        delay(1100);
+//        digitalWrite(SIM800H_KEY, HIGH);
+//        delay(2000);
+//        Serial.print(digitalRead(SIM800H_PS) ? '!' : '.');
+//    } while (digitalRead(SIM800H_PS) == LOW);
+//    // make pin unused (do not leak)
+//    pinMode(SIM800H_KEY, INPUT_PULLUP);
+//    Serial.println();
+
+    sim800h.println(F("ATE1"));
     delay(100);
-    sim800h.println(F("Hello Alice!"));
+    sim800h.println(F("AT+SAPBR=\"APN\",\""
+                              FONA_APN
+                              "\""));
     delay(1000);
-    sim800h.println(F("AT+SMTPSEND"));
+    sim800h.println(F("AT+SAPBR=\"USER\",\""
+                              FONA_USER
+                              "\""));
+    delay(1000);
+    sim800h.println(F("AT+SAPBR=\"PWD\",\""
+                              FONA_PASS
+                              "\""));
+    delay(1000);
+    sim800h.println(F("AT+CGATT=1"));
+
+
+//    sim800h.println(F("AT+SMTPSRV=mail.jugel.info,25"));
+//    sim800h.println(F("AT+SMTPFROM=leo@ubirch.com,leo"));
+//    sim800h.println(F("AT+SMTPRCPT=0,0,trigger@recipe.ifttt.com"));
+//    sim800h.println(F("AT+SMTPSUB=ubirch no1 here"));
+//    sim800h.println(F("AT+SMTPBODY=12"));
+//    sim800h.println(F("Hello Alice!"));
+//    sim800h.println(F("AT+SMTPSEND"));
 }
 
 // read what is available from the serial port and send to modem

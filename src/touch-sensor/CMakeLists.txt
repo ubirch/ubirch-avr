@@ -1,0 +1,2 @@
+add_executable_avr(touch_sensor touch_sensor.c)
+target_link_libraries(touch_sensor mpr121 i2c uart dbg_utils)

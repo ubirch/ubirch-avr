@@ -8,6 +8,7 @@
 #include <SoftwareSerial.h>
 #include "Adafruit_FONA.h"
 #include "SparkFunISL29125.h"
+#include "UbirchSIM800.h"
 #include <avr/sleep.h>
 #include <avr/wdt.h>
 
@@ -25,39 +26,15 @@ SFE_ISL29125 RGB_sensor;
 #define led 13
 #define trigger 6
 
-SoftwareSerial myfona = SoftwareSerial(FONA_TX, FONA_RX);
-Adafruit_FONA fona = Adafruit_FONA(FONA_RST);
+SoftwareSerial fonaSerial = SoftwareSerial(FONA_TX, FONA_RX);
+UbirchSIM800 fona = UbirchSIM800(FONA_RST, FONA_KEY, FONA_PS);
 
 int i = 1; //loop counter
 
-void TurnOnFona() {
-    Serial.println(F("FONA: TURNING ON"));
-
-    do {
-        digitalWrite(FONA_KEY, HIGH);
-        delay(10);
-        digitalWrite(FONA_KEY, LOW);
-        delay(1100);
-        digitalWrite(FONA_KEY, HIGH);
-        delay(2000);
-        Serial.print(digitalRead(FONA_PS) ? '!' : '.');
-    } while (digitalRead(FONA_PS) == LOW);
-    Serial.println();
-    Serial.println(F("FONA: IS ON"));
-}
-
-void TurnOffFona() {
-    Serial.println(F("FONA: TURNING OFF"));
-    fona.println("AT+CPOWD=1");
-    do { digitalWrite(FONA_KEY, LOW); } while (digitalRead(FONA_PS) == HIGH);
-    digitalWrite(FONA_KEY, HIGH);
-    Serial.println(F("FONA: IS OFF"));
-}
-
 void setup() {
     Serial.begin(BAUD);
-    myfona.begin(9600);
-    fona.begin(myfona);
+    fonaSerial.begin(9600);
+    fona.begin(fonaSerial);
 
     pinMode(led, OUTPUT);
     pinMode(trigger, INPUT);
@@ -73,11 +50,9 @@ void setup() {
             delay(1000);
         }
     }
+
     // edit APN settings in config.h
     fona.setGPRSNetworkSettings(F(FONA_APN), F(FONA_USER), F(FONA_PASS));
-    pinMode(FONA_KEY, OUTPUT);
-    TurnOffFona();
-    delay(1000);
 }
 
 void flushSerial() {
@@ -113,36 +88,14 @@ void sleepabit(int howlong) {
     wdt_disable();
 }
 
-/* TODO check unused function
-boolean SendATCommand(char Command[], char Value1, char Value2) {
-    unsigned char buffer[64];
-    unsigned long TimeOut = 20000;
-    int count = 0;
-    int complete = 0;
-    unsigned long commandClock = millis();
-    fona.println(Command);
-    while (!complete && commandClock <= millis() + TimeOut) {
-        while (!fona.available() && commandClock <= millis() + TimeOut);
-        while (fona.available()) {
-            buffer[count++] = fona.read();
-            if (count == 64) break;
-        }
-        //Serial.write(buffer, count);
-        for (int i = 0; i <= count; i++) {
-            if (buffer[i] == Value1 && buffer[i + 1] == Value2) complete = 1;
-        }
-    }
-    if (complete == 1) return 1;
-    else return 0;
-}
-*/
-
 void GetDisconnected() {
     fona.enableGPRS(false);
     Serial.println(F("GPRS Serivces Stopped"));
 }
 
 void GetConnected() {
+    fona.wakeup();
+
     long elapsedTime;
     uint8_t n = 0;
     long startTime;
@@ -174,21 +127,19 @@ void GetConnected() {
             default:
                 Serial.println(F("???"));
                 break;
-
         }
         elapsedTime = millis() - startTime;
         if (elapsedTime > 80000) {
             delay(1000);
-            TurnOffFona();
+            fona.shutdown();
             pinMode(trigger, OUTPUT);
             digitalWrite(led, LOW);
             sleepabit(1800); //if we don't get on the network we will sleep a bit
             startTime = millis(); //reset start-time
             digitalWrite(led, HIGH);
             pinMode(trigger, INPUT);
-            TurnOnFona();
+            fona.wakeup();
             delay(100);
-            fona.begin(myfona);
             //break;
         }
         ////wdt_reset();
@@ -201,13 +152,16 @@ void GetConnected() {
 }
 
 void SendGPS() {
+    RGB_sensor.init();
+    while (!(RGB_sensor.readStatus() & FLAG_CONV_DONE)) Serial.print("?");
+    Serial.println("RGB conversion done.");
+
     //prepare sensor data
     unsigned int red1 = RGB_sensor.readRed();
     unsigned int green1 = RGB_sensor.readGreen();
     unsigned int blue1 = RGB_sensor.readBlue();
-//    unsigned int red = (unsigned int) sqrt(sqrt(red1 * red1 / 1));
-//    unsigned int green = (unsigned int) sqrt(sqrt(green1 * green1 / 1));
-//    unsigned int blue = (unsigned int) sqrt(sqrt(blue1 * blue1 / 1));
+    Serial.println(red1);
+
     char value_red[3 + 1];
     char value_green[3 + 1];
     char value_blue[3 + 1];
@@ -217,17 +171,13 @@ void SendGPS() {
 
     char replybuffer[80];
     uint16_t returncode;
-    TurnOnFona();
-    delay(1000);
-    fona.begin(myfona);
-    delay(3500);
+    fona.wakeup();
     GetConnected();
-    delay(3000);
     fona.enableGPRS(true);
     while (fona.GPRSstate() == 0) Serial.print(".");
     Serial.println("! GPRS OK");
 
-//    // force reconnect
+    // force reconnect
     if (fona.sendCheckReply(F("AT+SAPBR=3,1,\"APN\",\""
                                       FONA_APN
                                       "\""), F("OK")), -1)
@@ -313,13 +263,14 @@ void SendGPS() {
             Serial.println(statuscode);
             Serial.println(length);
         }
+        delay(5000);
         fona.HTTP_GET_end();
 
     }
     delay(100);
     GetDisconnected();
     delay(1000);
-    TurnOffFona();
+    fona.shutdown();
 }
 
 void loop() {
@@ -337,7 +288,7 @@ void loop() {
     }
 
     delay(100);
-    TurnOffFona();
+    fona.shutdown();
     delay(1000);
     pinMode(trigger, OUTPUT);
     digitalWrite(led, LOW);

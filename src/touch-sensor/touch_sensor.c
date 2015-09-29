@@ -1,0 +1,107 @@
+/**
+ * rgb sensor example
+ *
+ * data sheet: http://www.intersil.com/content/dam/Intersil/documents/isl2/isl29125.pdf
+ *
+ * @author Matthias L. Jugel
+ *
+ * == LICENSE ==
+ * Copyright 2015 ubirch GmbH (http://www.ubirch.com)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+#include "uart.h"
+#include "uart_stdio.h"
+
+#include "i2c_core.h"
+#include <mpr121.h>
+
+#include <util/delay.h>
+#include <dbg_utils.h>
+
+/**
+ * A little prompt function to step through the code.
+ */
+void prompt(char *p) {
+    printf(p);
+    char input[10];
+    fgets(input, sizeof(input), stdin);
+}
+
+/**
+ * Blink a few times and output dots to show it's not crashed.
+ */
+void blink(void) {
+    for (uint8_t i = 3; i > 0; i--) {
+        putchar('.');
+        PORTB ^= _BV(PORTB5);
+        _delay_ms(3000);
+    }
+    puts("");
+}
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wmissing-noreturn"
+#pragma clang diagnostic ignored "-Wreturn-stack-address"
+
+int main(void) {
+    // disable watchdog (pin 6 output)
+    DDRD |= _BV(PIND6);
+    // enable LED (pin 5 output)
+    DDRB |= _BV(PINB5);
+
+    // just in case we use I2C2 (second port)
+    // enable power (pin 3 output + HIGH)
+    DDRB |= _BV(PINB3);
+    PORTB |= _BV(PORTB3);
+
+    UART_INIT_STDIO();
+
+    blink();
+    prompt("press enter to start:");
+
+    DDRB &= ~_BV(PINB5);
+
+    i2c_init(I2C_SPEED_400KHZ);
+
+    // reset device
+    if (!mpr_reset()) {
+        puts("could not initialize MPR121 touch sensor");
+    }
+    puts("MPR121 initialized");
+
+    while (1) {
+        uint16_t status = mpr_status();
+
+        // debugging info, what
+        printf("\t\t\t\t\t\t\t\t\t\t\t\t\t ");
+        print_bits(2, status);
+
+        printf("Filt: ");
+        for (uint8_t i = 0; i < 12; i++) {
+            printf("%04lx\t", (unsigned long) mpr_status_filtered(i));
+        }
+        puts("");
+        printf("Base: ");
+        for (uint8_t i = 0; i < 12; i++) {
+            printf("%04lx\t", (unsigned long) mpr_baseline(i));
+        }
+        puts("");
+
+        // put a delay so it isn't overwhelming
+        _delay_ms(100);
+    }
+
+}
+
+#pragma clang diagnostic pop

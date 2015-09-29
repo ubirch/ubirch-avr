@@ -34,7 +34,7 @@
 #include <ssd1306.h>
 #include <font5x5.h>
 #include <avr/io.h>
-#include <i2c.h>
+#include "i2c_core.h"
 
 /**
  * A little prompt function to step through the code.
@@ -59,6 +59,7 @@ void blink(void) {
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wmissing-noreturn"
+#pragma clang diagnostic ignored "-Wreturn-stack-address"
 
 int main(void) {
     UART_INIT_STDIO();
@@ -74,6 +75,7 @@ int main(void) {
     i2c_init(I2C_SPEED_400KHZ);
 
     oled_reset();
+    DBG_MSG("OLED RESET");
 
     // RGB sensor setup
     if (!isl_reset()) DBG_MSG("error: can't find rgb sensor");

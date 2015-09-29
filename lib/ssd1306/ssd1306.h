@@ -88,7 +88,7 @@ void oled_reset(void);
  * @param address the controller i2c address
  * @param data the command byte
  */
-void oled_cmd(uint8_t address, uint8_t data);
+void oled_cmd(uint8_t address, uint8_t command);
 
 /**
  * Send data to the OLED display controller.

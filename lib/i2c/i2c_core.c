@@ -1,5 +1,5 @@
 /**
- * i2c implementation
+ * i2c implementation core functionality.
  *
  * @author Matthias L. Jugel
  *
@@ -19,7 +19,7 @@
  * limitations under the License.
  */
 #include <stdio.h>
-#include "i2c.h"
+#include "i2c_core.h"
 
 void i2c_init(uint8_t speed) {
     DDRC |= _BV(PINC4) | _BV(PINC5);

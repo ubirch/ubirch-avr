@@ -1,5 +1,5 @@
 /**
- * I2C library.
+ * ...
  *
  * @author Matthias L. Jugel
  *
@@ -19,5 +19,28 @@
  * limitations under the License.
  */
 
-#include "i2c_core.h"
-#include "i2c_registers.h"
+#ifndef UBIRCH_FONA_H
+#define UBIRCH_FONA_H
+
+#include <Adafruit_FONA.h>
+
+class UbirchSIM800 : public Adafruit_FONA {
+
+public:
+    UbirchSIM800(uint8_t rst, uint8_t key, uint8_t ps);
+
+    void shutdown();
+
+    void wakeup();
+
+protected:
+    uint8_t _keypin;
+    uint8_t _pspin;
+    uint16_t _speed;
+
+    SoftwareSerial *_serial;
+
+private:
+};
+
+#endif //UBIRCH_FONA_H

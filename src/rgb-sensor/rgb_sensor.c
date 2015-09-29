@@ -23,7 +23,7 @@
 #include "uart.h"
 #include "uart_stdio.h"
 
-#include <i2c.h>
+#include "i2c_core.h"
 #include <isl29125.h>
 
 #include <math.h>

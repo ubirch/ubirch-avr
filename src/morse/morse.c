@@ -91,6 +91,7 @@ void prompt(char *p) {
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wmissing-noreturn"
+#pragma clang diagnostic ignored "-Wreturn-stack-address"
 
 int main(void) {
     UART_INIT_STDIO();
@@ -101,8 +102,9 @@ int main(void) {
     DDRB |= _BV(PINB5);
     PORTB &= ~_BV(PORTB5);
     prompt("Press Enter to start...");
+    printf("F_CPU=%lu, BAUD=%u, MCU=%s\n", F_CPU, BAUD, MCU);
 
-    char text[] = "hello world this is ubirch 1 from danmark";
+    static char text[] = "hello world this is ubirch 1 from danmark";
 
     while (1) {
         char *c = text;

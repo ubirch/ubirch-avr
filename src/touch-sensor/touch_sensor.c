@@ -85,7 +85,7 @@ int main(void) {
 
         // debugging info, what
         printf("\t\t\t\t\t\t\t\t\t\t\t\t\t ");
-        print_bits(2, status);
+        print_bits(2, (const void *const) status);
 
         printf("Filt: ");
         for (uint8_t i = 0; i < 12; i++) {

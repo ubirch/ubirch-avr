@@ -1,7 +1,4 @@
-CMakeCache.txt
-CMakeFiles
-Makefile
-cmake_install.cmake
-install_manifest.txt
 # config.h is used for local configurations that should not be published
 config.h
+.idea/
+build/

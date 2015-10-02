@@ -80,22 +80,38 @@ int main(void) {
     }
     puts("MPR121 initialized");
 
+    uint16_t lasttouched = 0;
     while (1) {
         uint16_t status = mpr_status();
 
+        printf("\033[2J");
+        for (uint8_t i = 0; i < 13; i++) {
+            // it if *is* touched and *wasnt* touched before, alert!
+            if ((status & _BV(i)) && !(lasttouched & _BV(i))) {
+                printf("%d touched\n", i);
+            }
+            // if it *was* touched and now *isnt*, alert!
+            if (!(status & _BV(i)) && (lasttouched & _BV(i))) {
+                printf("%d released\n", i);
+            }
+        }
+
+        // reset our state
+        lasttouched = status;
+
         // debugging info, what
-        printf("\t\t\t\t\t\t\t\t\t\t\t\t\t ");
-        print_bits(2, (const void *const) status);
+        printf("Tchd: ");
+        print_bits(sizeof(status), (const void *const) &status);
+        puts("");
 
         printf("Filt: ");
-        for (uint8_t i = 0; i < 12; i++) {
-            printf("%04lx\t", (unsigned long) mpr_status_filtered(i));
-        }
+        uint8_t pin = 13;
+        while (pin--) printf("%lu\t", (unsigned long) mpr_status_filtered(pin));
         puts("");
+
         printf("Base: ");
-        for (uint8_t i = 0; i < 12; i++) {
-            printf("%04lx\t", (unsigned long) mpr_baseline(i));
-        }
+        pin = 13;
+        while (pin--) printf("%lu\t", (unsigned long) mpr_baseline(pin));
         puts("");
 
         // put a delay so it isn't overwhelming

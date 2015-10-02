@@ -36,5 +36,4 @@ void print_bits(size_t size, void const *const ptr) {
             printf("%u", byte);
         }
     }
-    puts("");
 }

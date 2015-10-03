@@ -75,39 +75,43 @@ add_definitions(-DBAUD=${BAUD})
 
 # we need a little function to add multiple targets
 function(add_executable_avr NAME)
-    add_executable(${NAME} ${ARGN})
-    set_target_properties(${NAME} PROPERTIES OUTPUT_NAME "${NAME}.elf")
-    set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${NAME}.hex;${NAME}.eep;${NAME}.lst")
+    if (DEFINED MCU_REQUIRED AND NOT "${MCU}" EQUAL "${MCU_REQUIRED}")
+        message(STATUS "Ignoring target ${NAME} (required MCU '${MCU_REQUIRED}' != '${MCU}')")
+    else ()
+        add_executable(${NAME} ${ARGN})
+        set_target_properties(${NAME} PROPERTIES OUTPUT_NAME "${NAME}.elf")
+        set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${NAME}.hex;${NAME}.eep;${NAME}.lst")
 
-    # generate the .hex file
-    add_custom_command(
-            OUTPUT ${NAME}.hex
-            COMMAND ${AVRSTRIP} "${NAME}.elf"
-            COMMAND ${OBJCOPY} -O ihex -j .eeprom --set-section-flags=.eeprom=alloc,load --no-change-warnings --change-section-lma .eeprom=0 "${NAME}.elf" "${NAME}.eep"
-            COMMAND ${OBJCOPY} -O ihex -R .eeprom "${NAME}.elf" "${NAME}.hex"
-            COMMAND ${AVRSIZE} --mcu=${MCU} -C --format=avr "${NAME}.elf"
-            DEPENDS ${NAME})
-    add_custom_target(${NAME}-strip ALL DEPENDS ${NAME}.hex)
+        # generate the .hex file
+        add_custom_command(
+                OUTPUT ${NAME}.hex
+                COMMAND ${AVRSTRIP} "${NAME}.elf"
+                COMMAND ${OBJCOPY} -O ihex -j .eeprom --set-section-flags=.eeprom=alloc,load --no-change-warnings --change-section-lma .eeprom=0 "${NAME}.elf" "${NAME}.eep"
+                COMMAND ${OBJCOPY} -O ihex -R .eeprom "${NAME}.elf" "${NAME}.hex"
+                COMMAND ${AVRSIZE} --mcu=${MCU} -C --format=avr "${NAME}.elf"
+                DEPENDS ${NAME})
+        add_custom_target(${NAME}-strip ALL DEPENDS ${NAME}.hex)
 
-    # add a reset command using avrdude (only if it does not yet exist)
-    if (NOT TARGET avr-reset)
-        add_custom_target(avr-reset COMMAND ${AVRDUDE} -c${PROGRAMMER} -p${MCU})
+        # add a reset command using avrdude (only if it does not yet exist)
+        if (NOT TARGET avr-reset)
+            add_custom_target(avr-reset COMMAND ${AVRDUDE} -c${PROGRAMMER} -p${MCU})
+        endif ()
+
+        if (PROGRAMMER STREQUAL "usbasp")
+            set(AVRDUDE_ARGS -c${PROGRAMMER} -p${MCU} -Pusb)
+        else ()
+            set(AVRDUDE_ARGS -c${PROGRAMMER} -p${MCU} -P${SERIAL_DEV} -b${BAUD})
+        endif ()
+
+        # flash the produces binary
+        add_custom_target(
+                ${NAME}-flash
+                COMMAND ${AVRDUDE} ${AVRDUDE_ARGS} -U flash:w:${NAME}.hex
+                DEPENDS ${NAME}.hex)
+        add_custom_target(
+                ${NAME}-monitor
+                COMMAND ${MONITOR} ${MONITOR_ARGS})
     endif ()
-
-    if (PROGRAMMER STREQUAL "usbasp")
-        set(AVRDUDE_ARGS -c${PROGRAMMER} -p${MCU} -Pusb)
-    else()
-        set(AVRDUDE_ARGS -c${PROGRAMMER} -p${MCU} -P${SERIAL_DEV} -b${BAUD})
-    endif ()
-
-    # flash the produces binary
-    add_custom_target(
-            ${NAME}-flash
-            COMMAND ${AVRDUDE} ${AVRDUDE_ARGS} -U flash:w:${NAME}.hex
-            DEPENDS ${NAME}.hex)
-    add_custom_target(
-            ${NAME}-monitor
-            COMMAND ${MONITOR} ${MONITOR_ARGS})
 endfunction(add_executable_avr)
 
 # add all the libraries as possible library dependencies
@@ -148,7 +152,7 @@ endif ()
 
 set(ARDUINO_CORE_LIBS "" CACHE INTERNAL "arduino core libraries")
 function(setup_arduino_core)
-    if (DEFINED ARDUINO_SDK_PATH AND IS_DIRECTORY ${ARDUINO_SDK_PATH} AND NOT(TARGET arduino-core))
+    if (DEFINED ARDUINO_SDK_PATH AND IS_DIRECTORY ${ARDUINO_SDK_PATH} AND NOT (TARGET arduino-core))
         # set the paths
         set(ARDUINO_CORES_PATH ${ARDUINO_SDK_PATH}/hardware/arduino/avr/cores/arduino CACHE STRING "")
         set(ARDUINO_VARIANTS_PATH ${ARDUINO_SDK_PATH}/hardware/arduino/avr/variants/standard CACHE STRING "")
@@ -183,7 +187,7 @@ function(setup_arduino_core)
                     endforeach ()
                     list(APPEND ARDUINO_CORE_LIBS ${libname})
                     set(ARDUINO_CORE_LIBS ${ARDUINO_CORE_LIBS} CACHE INTERNAL "arduino core libraries")
-                else()
+                else ()
                     include_directories(SYSTEM ${libdir})
                 endif ()
             endif ()
@@ -209,7 +213,7 @@ function(add_sketches SKETCHES_PATH)
                 add_subdirectory(${subdir})
             endif ()
         endforeach ()
-    else()
+    else ()
         message(WARNING "No Arduino SDK found at '${ARDUINO_SDK_PATH}', can't compile sketches!")
     endif ()
 endfunction()
@@ -256,10 +260,10 @@ function(target_sketch_library TARGET NAME URL)
                 endforeach ()
                 list(REMOVE_DUPLICATES includes)
                 target_include_directories(${NAME} PUBLIC ${includes})
-            else()
+            else ()
                 message(FATAL_ERROR "Could not find sources in library ${NAME}!")
             endif ()
-        else()
+        else ()
             message(FATAL_ERROR "Missing git, please install and try again!")
         endif ()
     endif ()

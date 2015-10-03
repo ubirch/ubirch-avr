@@ -75,7 +75,7 @@ add_definitions(-DBAUD=${BAUD})
 
 # we need a little function to add multiple targets
 function(add_executable_avr NAME)
-    if (DEFINED MCU_REQUIRED AND NOT "${MCU}" EQUAL "${MCU_REQUIRED}")
+    if (DEFINED MCU_REQUIRED AND (NOT (MCU STREQUAL "${MCU_REQUIRED}")))
         message(STATUS "Ignoring target ${NAME} (required MCU '${MCU_REQUIRED}' != '${MCU}')")
     else ()
         add_executable(${NAME} ${ARGN})

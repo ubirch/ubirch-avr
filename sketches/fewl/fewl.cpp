@@ -7,16 +7,28 @@
 
 #include <SoftwareSerial.h>
 #include "Adafruit_FONA.h"
-#include "SparkFunISL29125.h"
+
 #include "UbirchSIM800.h"
+
+extern "C" {
+
+#include <isl29125.h>
+#include <i2c_core.h>
+#include <dbg_utils.h>
+}
+
+
 #include <avr/sleep.h>
 #include <avr/wdt.h>
+
+// #include <isl29125.h>
+
 
 #ifndef BAUD
 #   define BAUD 9600
 #endif
 
-SFE_ISL29125 RGB_sensor;
+// SFE_ISL29125 RGB_sensor;
 
 #define FONA_RX 2
 #define FONA_TX 3
@@ -42,6 +54,28 @@ void setup() {
     delay(100);
     digitalWrite(led, LOW);
     delay(100);
+
+    i2c_init(I2C_SPEED_400KHZ);
+    if (!isl_reset()) {
+        puts("could not initialize ISL29125 RGB sensor");
+    }
+
+    // set sampling mode, ir filter and interrupt mode
+    isl_set(ISL_R_COLOR_MODE, ISL_MODE_RGB | ISL_MODE_10KLUX | ISL_MODE_16BIT);
+    isl_set(ISL_R_FILTERING, ISL_FILTER_IR_MAX);
+    isl_set(ISL_R_INTERRUPT, ISL_INT_ON_THRSLD);
+
+    printf("read mode: ");
+    uint8_t color_mode = isl_get(ISL_R_COLOR_MODE);
+    print_bits(1, &color_mode);
+    printf("read filter: ");
+    uint8_t ir_filtering = isl_get(ISL_R_FILTERING);
+    print_bits(1, &ir_filtering);
+    printf("read interrupts: ");
+    uint8_t intr = isl_get(ISL_R_INTERRUPT);
+    print_bits(1, &intr);
+
+    /*
     if (RGB_sensor.init()) {
         for (int i = 0; i < 2; i++) {
             unsigned int trash1 = RGB_sensor.readRed();
@@ -50,6 +84,8 @@ void setup() {
             delay(1000);
         }
     }
+    */
+
 
     // edit APN settings in config.h
     fona.setGPRSNetworkSettings(F(FONA_APN), F(FONA_USER), F(FONA_PASS));
@@ -145,29 +181,32 @@ void GetConnected() {
         ////wdt_reset();
     }
         //be careful - this is code expects a SIM that registeres as roaming - change this to "1" if your SIM is registering normally
-    while (n != 5);
+    while (n != 1);
     //if (n !=5)
     //sleepabit(3600);
     ////wdt_reset();
 }
 
 void SendGPS() {
-    RGB_sensor.init();
-    while (!(RGB_sensor.readStatus() & FLAG_CONV_DONE)) Serial.print("?");
+
+
+    while (!(isl_get(ISL_R_STATUS) & ISL_STATUS_ADC_DONE)) putchar('%');
     Serial.println("RGB conversion done.");
 
+    printf("48bit: ");
+    rgb48 rgb = isl_read_rgb();
+    printf("0x%04x%04x%04x rgb48(%u,%u,%u)\n", rgb.green, rgb.red, rgb.blue, rgb.red, rgb.green, rgb.blue);
+
     //prepare sensor data
-    unsigned int red1 = RGB_sensor.readRed();
-    unsigned int green1 = RGB_sensor.readGreen();
-    unsigned int blue1 = RGB_sensor.readBlue();
-    Serial.println(red1);
+
+    Serial.println(rgb.red);
 
     char value_red[3 + 1];
     char value_green[3 + 1];
     char value_blue[3 + 1];
-    sprintf(value_red, "%d", red1 >> 8);
-    sprintf(value_green, "%d", green1 >> 8);
-    sprintf(value_blue, "%d", blue1 >> 8);
+    sprintf(value_red, "%d", rgb.red);
+    sprintf(value_green, "%d", rgb.green);
+    sprintf(value_blue, "%d", rgb.blue);
 
     char replybuffer[80];
     uint16_t returncode;
@@ -195,6 +234,8 @@ void SendGPS() {
     fona.getBattPercent(&vbat);
     char value_bat[20];
     sprintf(value_bat, "%d", vbat);
+    Serial.print("Battery :");
+    Serial.println(value_bat);
 
     //get number of loops
     char loops[10];
@@ -294,7 +335,7 @@ void loop() {
     digitalWrite(led, LOW);
     i++;
 
-    sleepabit(3350);
+    sleepabit(600);
 }
 
 

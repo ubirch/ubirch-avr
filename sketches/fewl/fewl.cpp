@@ -335,7 +335,7 @@ void loop() {
     digitalWrite(led, LOW);
     i++;
 
-    sleepabit(1800);
+    sleepabit(600);
 }
 
 

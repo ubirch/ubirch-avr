@@ -193,9 +193,9 @@ void SendGPS() {
     while (!(isl_get(ISL_R_STATUS) & ISL_STATUS_ADC_DONE)) putchar('%');
     Serial.println("RGB conversion done.");
 
-    printf("48bit: ");
+    // printf("48bit: ");
     rgb48 rgb = isl_read_rgb();
-    printf("0x%04x%04x%04x rgb48(%u,%u,%u)\n", rgb.green, rgb.red, rgb.blue, rgb.red, rgb.green, rgb.blue);
+    // printf("0x%04x%04x%04x rgb48(%u,%u,%u)\n", rgb.green, rgb.red, rgb.blue, rgb.red, rgb.green, rgb.blue);
 
     //prepare sensor data
 
@@ -335,7 +335,7 @@ void loop() {
     digitalWrite(led, LOW);
     i++;
 
-    sleepabit(600);
+    sleepabit(1800);
 }
 
 

@@ -8,8 +8,8 @@
 // put your thingspeak url here including the token and the channel id
 #define THINGSPEAK_URL "http://<thingspeak-host>/update?key=<1234567890ABCD>"
 
-#define FONA_APN "<apn>"
-#define FONA_USER "<username>"
-#define FONA_PASS "<password>"
+#define SIM800_APN "<apn>"
+#define SIM800_USER "<username>"
+#define SIM800_PASS "<password>"
 
 #endif //UBIRCH_FEWL_CONFIG_H

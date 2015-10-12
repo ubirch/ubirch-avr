@@ -31,6 +31,7 @@
 
 #include <Arduino.h>
 #include <SoftwareSerial.h>
+#include <UbirchSIM800.h>
 #include "config.h"
 
 #ifndef BAUD
@@ -38,12 +39,8 @@
 #endif
 
 #define WATCHDOG 6
-#define SIM800H_RX 2
-#define SIM800H_TX 3
-#define SIM800H_KEY 7
-#define SIM800H_PS 8
 
-SoftwareSerial sim800h = SoftwareSerial(SIM800H_TX, SIM800H_RX);
+UbirchSIM800 sim800 = UbirchSIM800();
 
 void setup() {
     // disable the external watchdog
@@ -51,7 +48,8 @@ void setup() {
 
     // setup baud rates for serial and modem
     Serial.begin(BAUD);
-    sim800h.begin(19200);
+
+    delay(3000);
 
     cli();
 
@@ -67,62 +65,36 @@ void setup() {
 
     sei();
 
-    // query generic information and registration status
-    delay(3000);
-    Serial.println();
-    // ATI - display information
-    // AT+CREG? - display information on network registration
-    // AT+CMGF=1 - SMS text mode
-    // AT+CMGL="ALL" - list all available SMS
+    Serial.println("SIM800 wakeup...");
+    if (!sim800.wakeup()) {
+        Serial.println("SIM800 wakeup error");
+        while (1);
+    }
+    sim800.setAPN(F(SIM800_APN), F(SIM800_USER), F(SIM800_PASS));
 
-//    // check if the chip is already awake, otherwise start wakeup
-//    pinMode(SIM800H_KEY, OUTPUT);
-//    do {
-//        digitalWrite(SIM800H_KEY, HIGH);
-//        delay(10);
-//        digitalWrite(SIM800H_KEY, LOW);
-//        delay(1100);
-//        digitalWrite(SIM800H_KEY, HIGH);
-//        delay(2000);
-//        Serial.print(digitalRead(SIM800H_PS) ? '!' : '.');
-//    } while (digitalRead(SIM800H_PS) == LOW);
-//    // make pin unused (do not leak)
-//    pinMode(SIM800H_KEY, INPUT_PULLUP);
-//    Serial.println();
+    Serial.println("SIM800 waiting for network registration...");
+    while (!sim800.registerNetwork()) {
+        sim800.shutdown();
+        sim800.wakeup();
+    }
 
-    sim800h.println(F("ATE1"));
-    delay(100);
-    sim800h.println(F("AT+SAPBR=\"APN\",\""
-                              FONA_APN
-                              "\""));
-    delay(1000);
-    sim800h.println(F("AT+SAPBR=\"USER\",\""
-                              FONA_USER
-                              "\""));
-    delay(1000);
-    sim800h.println(F("AT+SAPBR=\"PWD\",\""
-                              FONA_PASS
-                              "\""));
-    delay(1000);
-    sim800h.println(F("AT+CGATT=1"));
+    Serial.println("SIM800 enabling GPRS...");
+    if (!sim800.enableGPRS()) {
+        Serial.println("SIM800 can't enable GPRS");
+        while (1);
+    }
+    Serial.println("SIM800 initialized");
 
-
-//    sim800h.println(F("AT+SMTPSRV=mail.jugel.info,25"));
-//    sim800h.println(F("AT+SMTPFROM=leo@ubirch.com,leo"));
-//    sim800h.println(F("AT+SMTPRCPT=0,0,trigger@recipe.ifttt.com"));
-//    sim800h.println(F("AT+SMTPSUB=ubirch no1 here"));
-//    sim800h.println(F("AT+SMTPBODY=12"));
-//    sim800h.println(F("Hello Alice!"));
-//    sim800h.println(F("AT+SMTPSEND"));
+    sim800.expect_AT_OK(F("E1"));
 }
 
 // read what is available from the serial port and send to modem
 ISR(TIMER1_COMPA_vect) {
-    while (Serial.available() > 0) sim800h.write((uint8_t) Serial.read());
+    while (Serial.available() > 0) sim800._serial.write((uint8_t) Serial.read());
 }
 
 // the main loop just reads the responses from the modem and
 // writes them to the serial port
 void loop() {
-    while (sim800h.available() > 0) Serial.write(sim800h.read());
+    while (sim800._serial.available() > 0) Serial.write(sim800._serial.read());
 }

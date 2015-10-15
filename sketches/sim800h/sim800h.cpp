@@ -34,12 +34,15 @@
 #include <UbirchSIM800.h>
 #include "config.h"
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wmissing-noreturn"
 #ifndef BAUD
 #   define BAUD 115200
 #endif
 
 #define WATCHDOG 6
 
+static const char *const url = "http://ubirch.com/";
 UbirchSIM800 sim800 = UbirchSIM800();
 
 void setup() {
@@ -50,20 +53,6 @@ void setup() {
     Serial.begin(BAUD);
 
     delay(3000);
-
-    cli();
-
-    // reset the timer registers
-    TCCR1A = 0;
-    TCCR1B = 0;
-    TCNT1 = 0;
-
-    OCR1A = (uint16_t) (16000000UL / 8 - 1); // every 128 microseconds
-    TCCR1B |= _BV(CS01); // prescale 8 selected (still fast enough)
-    TCCR1B |= _BV(WGM12); // CTC mode
-    TIMSK1 |= _BV(OCIE1A); // timer compare interrupt
-
-    sei();
 
     Serial.println("SIM800 wakeup...");
     if (!sim800.wakeup()) {
@@ -85,7 +74,37 @@ void setup() {
     }
     Serial.println("SIM800 initialized");
 
+
+    Serial.print("GET ");
+    Serial.println(url);
+
+    // for some reason this has to be static or it will not return correctly (seems like the stack
+    // breaks because of the interrupt driven software serial
+    static uint32_t length = 0;
+    uint16_t status = sim800.HTTP_get(url, length);
+    Serial.print("STATUS: ");
+    Serial.println(status);
+    Serial.print("RESPONSE LENGTH: ");
+    Serial.println(length);
+
     sim800.expect_AT_OK(F("E1"));
+
+    Serial.println("Entering Console Mode:");
+
+    cli();
+
+    // reset the timer registers
+    TCCR1A = 0;
+    TCCR1B = 0;
+    TCNT1 = 0;
+
+    OCR1A = (uint16_t) (16000000UL / 8 - 1); // every 128 microseconds
+    TCCR1B |= _BV(CS01); // prescale 8 selected (still fast enough)
+    TCCR1B |= _BV(WGM12); // CTC mode
+    TIMSK1 |= _BV(OCIE1A); // timer compare interrupt
+
+    sei();
+
 }
 
 // read what is available from the serial port and send to modem
@@ -98,3 +117,5 @@ ISR(TIMER1_COMPA_vect) {
 void loop() {
     while (sim800._serial.available() > 0) Serial.write(sim800._serial.read());
 }
+
+#pragma clang diagnostic pop

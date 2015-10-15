@@ -24,7 +24,10 @@
 #include <Arduino.h>
 #include "UbirchSIM800.h"
 
-// show Serial output only in non-release mode
+//#define DEBUG_AT
+//#define DEBUG_PACKETS
+#define DEBUG_PROGRESS
+
 #ifndef NDEBUG
 #   define PRINT(s) Serial.print(F(s))
 #   define PRINTLN(s) Serial.println(F(s))
@@ -145,7 +148,7 @@ bool UbirchSIM800::shutdown() {
             PRINTLN("shutdown(): already shut down");
         }
     }
-    PRINTLN("shutdown(): ok");
+    PRINTLN("!!! SIM800 shutdown ok");
     return true;
 }
 
@@ -156,32 +159,35 @@ bool UbirchSIM800::registerNetwork(uint16_t timeout) {
         uint8_t n = 0;
         println(F("AT+CREG?"));
         expect_scan(F("+CREG: 0,%d"), &n);
-#ifndef NDEBUG
+#if !defined(NDEBUG) && defined(DEBUG_PROGRESS)
         switch (n) {
             case 0:
-                PRINTLN("_");
+                PRINT("_");
                 break;
             case 1:
-                PRINTLN("H");
+                PRINT("H");
                 break;
             case 2:
-                PRINTLN("S");
+                PRINT("S");
                 break;
             case 3:
-                PRINTLN("D");
+                PRINT("D");
                 break;
             case 4:
-                PRINTLN("?");
+                PRINT("?");
                 break;
             case 5:
-                PRINTLN("R");
+                PRINT("R");
                 break;
             default:
-                DEBUGLN(n);
+                DEBUG(n);
                 break;
         }
 #endif
-        if ((n == 1 || n == 5)) return true;
+        if ((n == 1 || n == 5)) {
+            PRINTLN("");
+            return true;
+        }
         delay(1000);
     }
     return false;
@@ -274,7 +280,7 @@ uint16_t UbirchSIM800::HTTP_get(const char *url, uint32_t &length, STREAM &file)
     uint32_t pos = 0, r = 0;
     do {
         r = HTTP_get_read(buffer, pos, SIM800_BUFSIZE);
-#ifndef NDEBUG
+#if !defined(NDEBUG) && defined(DEBUG_PROGRESS)
         if ((pos % 10240) == 0) {
             PRINT(" ");
             DEBUGLN(pos);
@@ -297,14 +303,16 @@ size_t UbirchSIM800::HTTP_get_read(char *buffer, uint32_t start, size_t length) 
 
     uint16_t available;
     expect_scan(F("+HTTPREAD: %lu"), &available);
+#ifdef DEBUG_PACKETS
     PRINT("~~~ PACKET: ");
     DEBUGLN(available);
-
+#endif
     size_t idx = read(buffer, available);
     if (!expect_OK()) return 0;
-
+#ifdef DEBUG_PACKETS
     PRINT("~~~ DONE: ");
     DEBUGLN(idx);
+#endif
     return idx;
 }
 
@@ -356,7 +364,9 @@ uint16_t UbirchSIM800::HTTP_post(const char *url, uint32_t &length, STREAM &file
         }
 
         if (r < SIM800_BUFSIZE) {
+#if !defined(NDEBUG) && defined(DEBUG_PROGRESS)
             PRINTLN("EOF");
+#endif
             break;
         }
 #ifndef NDEBUG
@@ -370,7 +380,6 @@ uint16_t UbirchSIM800::HTTP_post(const char *url, uint32_t &length, STREAM &file
 
     free(buffer);
     PRINTLN("");
-    DEBUGLN(pos);
 
     if (!expect_OK(5000)) return 1005;
 
@@ -515,43 +524,55 @@ void UbirchSIM800::eatEcho() {
 }
 
 void UbirchSIM800::print(const __FlashStringHelper *s) {
+#ifdef DEBUG_AT
     PRINT("+++ ");
     DEBUGQLN(s);
+#endif
     _serial.print(s);
 }
 
 void UbirchSIM800::print(uint32_t s) {
+#ifdef DEBUG_AT
     PRINT("+++ ");
     DEBUGLN(s);
+#endif
     _serial.print(s);
 }
 
 
 void UbirchSIM800::print(const char *s) {
+#ifdef DEBUG_AT
     PRINT("+++ ");
     DEBUGQLN(s);
+#endif
     _serial.print(s);
 }
 
 void UbirchSIM800::println(const __FlashStringHelper *s) {
+#ifdef DEBUG_AT
     PRINT("+++ ");
     DEBUGQLN(s);
+#endif
     _serial.print(s);
     eatEcho();
     _serial.println();
 }
 
 void UbirchSIM800::println(uint32_t s) {
+#ifdef DEBUG_AT
     PRINT("+++ ");
     DEBUGLN(s);
+#endif
     _serial.print(s);
     eatEcho();
     _serial.println();
 }
 
 void UbirchSIM800::println(const char *s) {
+#ifdef DEBUG_AT
     PRINT("+++ ");
     DEBUGQLN(s);
+#endif
     _serial.print(s);
     eatEcho();
     _serial.println();
@@ -570,10 +591,12 @@ bool UbirchSIM800::expect_AT_OK(const __FlashStringHelper *cmd, uint16_t timeout
 bool UbirchSIM800::expect(const __FlashStringHelper *expected, uint16_t timeout) {
     char buf[SIM800_BUFSIZE];
     unsigned int len = readline(buf, SIM800_BUFSIZE, timeout);
+#ifdef DEBUG_AT
     PRINT("--- (");
     DEBUG(len);
     PRINT(") ");
     DEBUGQLN(buf);
+#endif
     return strcmp_P(buf, (char PROGMEM *) expected) == 0;
 }
 
@@ -584,20 +607,24 @@ bool UbirchSIM800::expect_OK(uint16_t timeout) {
 bool UbirchSIM800::expect_scan(const __FlashStringHelper *pattern, void *ref, uint16_t timeout) {
     char buf[SIM800_BUFSIZE];
     unsigned int len = readline(buf, SIM800_BUFSIZE, timeout);
+#ifdef DEBUG_AT
     PRINT("--- (");
     DEBUG(len);
     PRINT(") ");
     DEBUGQLN(buf);
+#endif
     return sscanf_P(buf, (const char PROGMEM *) pattern, ref) == 1;
 }
 
 bool UbirchSIM800::expect_scan(const __FlashStringHelper *pattern, void *ref, void *ref1, uint16_t timeout) {
     char buf[SIM800_BUFSIZE];
     unsigned int len = readline(buf, SIM800_BUFSIZE, timeout);
+#ifdef DEBUG_AT
     PRINT("--- (");
     DEBUG(len);
     PRINT(") ");
     DEBUGQLN(buf);
+#endif
     return sscanf_P(buf, (const char PROGMEM *) pattern, ref, ref1) == 2;
 }
 
@@ -605,10 +632,12 @@ bool UbirchSIM800::expect_scan(const __FlashStringHelper *pattern, void *ref, vo
                                uint16_t timeout) {
     char buf[SIM800_BUFSIZE];
     unsigned int len = readline(buf, SIM800_BUFSIZE, timeout);
+#ifdef DEBUG_AT
     PRINT("--- (");
     DEBUG(len);
     PRINT(") ");
     DEBUGQLN(buf);
+#endif
     return sscanf_P(buf, (const char PROGMEM *) pattern, ref, ref1, ref2) == 1;
 }
 

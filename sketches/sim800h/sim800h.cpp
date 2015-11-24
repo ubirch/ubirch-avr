@@ -45,6 +45,8 @@
 static const char *const url = "http://ubirch.com/";
 UbirchSIM800 sim800 = UbirchSIM800();
 
+void enableSIM800();
+
 void setup() {
     // disable the external watchdog
     pinMode(WATCHDOG, OUTPUT);
@@ -52,35 +54,14 @@ void setup() {
     // setup baud rates for serial and modem
     Serial.begin(BAUD);
 
-    delay(3000);
-
-    Serial.println("SIM800 wakeup...");
-    if (!sim800.wakeup()) {
-        Serial.println("SIM800 wakeup error");
-        while (1);
-    }
-    sim800.setAPN(F(SIM800_APN), F(SIM800_USER), F(SIM800_PASS));
-
-    Serial.println("SIM800 waiting for network registration...");
-    while (!sim800.registerNetwork()) {
-        sim800.shutdown();
-        sim800.wakeup();
-    }
-
-    Serial.println("SIM800 enabling GPRS...");
-    if (!sim800.enableGPRS()) {
-        Serial.println("SIM800 can't enable GPRS");
-        while (1);
-    }
-    Serial.println("SIM800 initialized");
-
+    enableSIM800();
 
     Serial.print("GET ");
     Serial.println(url);
 
     // for some reason this has to be static or it will not return correctly (seems like the stack
     // breaks because of the interrupt driven software serial
-    static uint32_t length = 0;
+    unsigned long int length = 0;
     uint16_t status = sim800.HTTP_get(url, length);
     Serial.print("STATUS: ");
     Serial.println(status);
@@ -88,6 +69,17 @@ void setup() {
     Serial.println(length);
 
     sim800.expect_AT_OK(F("E1"));
+
+//    while(1) {
+//        Serial.print("shutdown ");
+//        sim800.shutdown();
+//        Serial.println("done");
+//
+//        enableSIM800();
+//        delay(2000);
+//    }
+
+
 
     Serial.println("Entering Console Mode:");
 
@@ -107,6 +99,28 @@ void setup() {
 
 }
 
+void enableSIM800() {
+    Serial.println("SIM800 wakeup...");
+    if (!sim800.wakeup()) {
+        Serial.println("SIM800 wakeup error");
+//        while (1);
+    }
+    sim800.setAPN(F(SIM800_APN), F(SIM800_USER), F(SIM800_PASS));
+
+    Serial.println("SIM800 waiting for network registration...");
+    while (!sim800.registerNetwork()) {
+        sim800.shutdown();
+        sim800.wakeup();
+    }
+
+    Serial.println("SIM800 enabling GPRS...");
+    if (!sim800.enableGPRS()) {
+        Serial.println("SIM800 can't enable GPRS");
+        while (1);
+    }
+    Serial.println("SIM800 initialized");
+}
+
 // read what is available from the serial port and send to modem
 ISR(TIMER1_COMPA_vect) {
     while (Serial.available() > 0) sim800._serial.write((uint8_t) Serial.read());
@@ -114,8 +128,13 @@ ISR(TIMER1_COMPA_vect) {
 
 // the main loop just reads the responses from the modem and
 // writes them to the serial port
+char buffer[255];
 void loop() {
-    while (sim800._serial.available() > 0) Serial.write(sim800._serial.read());
+    size_t len = sim800.readline(buffer, 254, 5000);
+    if (len > 0) {
+        Serial.write(buffer, len);
+        Serial.println();
+    }
 }
 
 #pragma clang diagnostic pop

@@ -32,6 +32,10 @@
 #  define DBG_MSG(...)
 #endif
 
+// create a string with the bits contained in this byte (not thread safe!)
 void print_bits(size_t n, void const *const ptr);
+
+// blink n times and wait 3s in-between
+void blink(uint8_t n);
 
 #endif //UBIRCH_DBG_UTILS_H

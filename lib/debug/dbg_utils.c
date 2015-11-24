@@ -20,8 +20,8 @@
  */
 
 #include "dbg_utils.h"
-#include <stdio.h>
-#include <stddef.h>
+#include <avr/io.h>
+#include <util/delay.h>
 
 // create a string with the bits contained in this byte (not thread safe!)
 void print_bits(size_t size, void const *const ptr) {
@@ -35,5 +35,15 @@ void print_bits(size_t size, void const *const ptr) {
             byte >>= j;
             printf("%u", byte);
         }
+    }
+}
+
+void blink(uint8_t n) {// blink a few times before we start
+    DDRB |= _BV(PINB5);
+    if(n <= 0) return;
+    while(--n) {
+        printf(".");
+        PORTB ^= _BV(PORTB5);
+        _delay_ms(3000);
     }
 }

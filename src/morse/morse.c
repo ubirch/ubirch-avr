@@ -76,17 +76,6 @@ void pwm_sound(unsigned long frequency, unsigned int duration) {
     }
 }
 
-
-/**
- * A little prompt function to step through the code.
- */
-void prompt(char *p) {
-    printf(p);
-    char input[10];
-    fgets(input, sizeof(input), stdin);
-}
-
-
 #define DOT_DURATION 1200/16
 
 #pragma clang diagnostic push

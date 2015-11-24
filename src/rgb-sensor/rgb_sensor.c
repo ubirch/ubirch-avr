@@ -27,29 +27,7 @@
 #include <isl29125.h>
 
 #include <math.h>
-#include <util/delay.h>
 #include <dbg_utils.h>
-
-/**
- * A little prompt function to step through the code.
- */
-void prompt(char *p) {
-    printf(p);
-    char input[10];
-    fgets(input, sizeof(input), stdin);
-}
-
-/**
- * Blink a few times and output dots to show it's not crashed.
- */
-void blink(void) {
-    for (uint8_t i = 3; i > 0; i--) {
-        putchar('.');
-        PORTB ^= _BV(PORTB5);
-        _delay_ms(3000);
-    }
-    puts("");
-}
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wmissing-noreturn"
@@ -67,7 +45,7 @@ int main(void) {
 
     UART_INIT_STDIO();
 
-    blink();
+    blink(3);
     prompt("press enter to start:");
 
     i2c_init(I2C_SPEED_400KHZ);

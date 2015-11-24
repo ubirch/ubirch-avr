@@ -40,7 +40,7 @@ int main() {
 
     char c = 'A';
     while (1) {
-        PORTB ^= _BV(PORTB5);
+        PORTC ^= _BV(PORTC3);
         if (c == 'Z') c = 'A';
         putchar(c++);
         _delay_ms(500);

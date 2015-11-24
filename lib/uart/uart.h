@@ -47,4 +47,9 @@ int uart_putchar(char c, FILE *stream);
  */
 int uart_getchar(FILE *stream);
 
+/**
+ * A little prompt function to step through the code.
+ */
+void prompt(char *p);
+
 #endif //UART_H

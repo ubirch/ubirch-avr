@@ -169,3 +169,11 @@ int uart_getchar(FILE *stream) {
 
     return c;
 }
+
+// A little prompt function to step through the code.
+void prompt(char *p) {
+    printf(p);
+    char input[10];
+    fgets(input, sizeof(input), stdin);
+}
+

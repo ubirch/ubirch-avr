@@ -15,6 +15,8 @@
 #   define BAUD 9600
 #endif
 
+#define SLEEP_CYCLES 3350
+
 #define led 13
 #define trigger 6
 
@@ -118,7 +120,7 @@ void SendGPS() {
     sim800h.enableGPRS();
 
     // get battery status
-    uint16_t bat_status, bat_percent, bat_voltage;
+    uint16_t bat_status = 0, bat_percent = 0, bat_voltage = 0;
     if (!getBatteryStatus(bat_status, bat_percent, bat_voltage)) {
         Serial.println("BAT status failed");
     }
@@ -171,5 +173,8 @@ void loop() {
     digitalWrite(led, LOW);
     loop_counter++;
 
-    sleepabit(3350);
+    sleepabit(SLEEP_CYCLES);
 }
+
+// the ISR is necessary to allow the CPU from actually sleeping
+ISR (WDT_vect) { }

@@ -22,7 +22,7 @@ SFE_ISL29125 RGB_sensor;
 
 UbirchSIM800 sim800h = UbirchSIM800();
 
-int i = 1; //loop counter
+int loop_counter = 1; //loop counter
 
 void setup() {
     Serial.begin(BAUD);
@@ -57,7 +57,7 @@ void sleepabit(int howlong) {
         // turn off brown-out enable in software
         //MCUCR = bit (BODS) | bit (BODSE);
         //MCUCR = bit (BODS);
-        sleep_cpu ();
+        sleep_cpu();
         // cancel sleep as a precaution
         sleep_disable();
         i2++;
@@ -65,18 +65,26 @@ void sleepabit(int howlong) {
     wdt_disable();
 }
 
-void GetDisconnected() {
-    sim800h.disableGPRS();
-    Serial.println(F("GPRS Serivces Stopped"));
+bool getBatteryStatus(uint16_t &bat_status, uint16_t &bat_percent, uint16_t &bat_voltage) {
+    sim800h.println(F("AT+CBC"));
+    if (!sim800h.expect_scan(F("+CBC: %d,%d,%d"), &bat_status, &bat_percent, &bat_voltage)) {
+        Serial.println("BAT lookup failed");
+        bat_percent = 0;
+    }
+    return sim800h.expect_OK();
 }
 
-void GetConnected() {
-    sim800h.wakeup();
-    while (!sim800h.registerNetwork(60000)) {
-        sim800h.shutdown();
-        sim800h.wakeup();
+bool getGPSLocation(char *replybuffer, char *lat, char *lon) {
+    uint16_t loc_status;
+    sim800h.println(F("AT+CIPGSMLOC=1,1"));
+    if (!sim800h.expect_scan(F("+CIPGSMLOC: %d,%s"), &loc_status, replybuffer, 60000)) {
+        Serial.println(F("GPS lookup failed"));
+    } else {
+        lon = strtok(replybuffer, ",");
+        lat = strtok(NULL, ",");
     }
-    sim800h.enableGPRS();
+    sim800h.expect_OK();
+    return loc_status == 0 && lat && lon;
 }
 
 void SendGPS() {
@@ -103,35 +111,29 @@ void SendGPS() {
     unsigned long response_length;
     unsigned int http_status;
 
-    GetConnected();
+    sim800h.wakeup();
+    while (!sim800h.registerNetwork(60000)) {
+        sim800h.shutdown();
+        sim800h.wakeup();
+    }
+    sim800h.enableGPRS();
 
     // get battery status
     uint16_t bat_status, bat_percent, bat_voltage;
-    sim800h.println(F("AT+CBC"));
-    if (!sim800h.expect_scan(F("+CBC: %d,%d,%d"), &bat_status, &bat_percent, &bat_voltage)) {
-        Serial.println("BAT lookup failed");
-        bat_percent = 0;
+    if (!getBatteryStatus(bat_status, bat_percent, bat_voltage)) {
+        Serial.println("BAT status failed");
     }
-    sim800h.expect_OK();
 
-    // get gsm location
-    uint16_t loc_status;
-    char *lat = NULL, *lon = NULL;
-    sim800h.println(F("AT+CIPGSMLOC=1,1"));
-    if (!sim800h.expect_scan(F("+CIPGSMLOC: %d,%s"), &loc_status, replybuffer, 60000)) {
-        Serial.println(F("GPS lookup failed"));
-    } else {
-        lon = strtok(replybuffer, ",");
-        lat = strtok(NULL, ",");
-    }
-    sim800h.expect_OK();
+    // get gsm locationuint16_t loc_status;
+    char *lat = NULL;
+    char *lon = NULL;
 
-    if (loc_status == 0 && lat && lon) {
+    if (getGPSLocation(replybuffer, lat, lon)) {
         //send the stuff to TP
         char url[300];
         sprintf(url,
                 THINGSPEAK_URL "&field1=%d&field2=%d&field3=%d&field4=%d&field5=%d&lat=%s&long=%s",
-                red1 >> 8, green1 >> 8, blue1 >> 8, bat_percent, i, lat, lon);
+                red1 >> 8, green1 >> 8, blue1 >> 8, bat_percent, loop_counter, lat, lon);
         Serial.println("URL:");
         Serial.println(url);
 
@@ -146,7 +148,7 @@ void SendGPS() {
         char url[200];
         sprintf(url,
                 THINGSPEAK_URL "&field1=%d&field2=%d&field3=%d&field4=%d&field5=%d&lat=0&long=0",
-                red1 >> 8, green1 >> 8, blue1 >> 8, bat_percent, i);
+                red1 >> 8, green1 >> 8, blue1 >> 8, bat_percent, loop_counter);
         Serial.println("URL (no GPS):");
         Serial.println(url);
         http_status = sim800h.HTTP_get(url, response_length);
@@ -156,22 +158,19 @@ void SendGPS() {
             Serial.println(response_length);
         }
     }
-    GetDisconnected();
+    sim800h.disableGPRS();
     sim800h.shutdown();
 }
 
 void loop() {
     digitalWrite(led, HIGH);
     pinMode(trigger, INPUT);
+
     SendGPS();
+
     pinMode(trigger, OUTPUT);
     digitalWrite(led, LOW);
-    i++;
+    loop_counter++;
 
     sleepabit(3350);
 }
-
-// watchdog interrupt
-ISR (WDT_vect) {
-    //i++;
-}  // end of WDT_vect

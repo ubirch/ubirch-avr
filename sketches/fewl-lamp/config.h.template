@@ -5,10 +5,11 @@
 #ifndef UBIRCH_FEWL_CONFIG_H
 #define UBIRCH_FEWL_CONFIG_H
 
-#define DEVICEID    "0"
-
-// put your thingspeak url here including the token and the channel id
-#define GETRGB_URL ("http://<request-host>/rp15/getRGB.php?deviceid="#DEVICEID)
+// put your get-rgb url here including the device id
+#define GETRGB_URL "http://<request-host>/rp15/getRGB.php?device=<device-id>"
+// define the neo-pixel type
+//#define PIXEL_TYPE (NEO_GRB|NEO_KHZ800)
+#define PIXEL_TYPE (NEO_RGB|NEO_KHZ800)
 
 #define FONA_APN "<apn>"
 #define FONA_USER "<username>"

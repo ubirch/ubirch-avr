@@ -15,11 +15,10 @@
 #   define BAUD 9600
 #endif
 
-SFE_ISL29125 RGB_sensor;
-
 #define led 13
 #define trigger 6
 
+SFE_ISL29125 RGB_sensor;
 UbirchSIM800 sim800h = UbirchSIM800();
 
 int loop_counter = 1; //loop counter

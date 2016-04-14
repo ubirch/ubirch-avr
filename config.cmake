@@ -10,6 +10,8 @@ set(PROGRAMMER arduino)
 set(SERIAL_DEV /dev/cu.SLAB_USBtoUART)
 #set(SERIAL_DEV /tmp/simavr-uart0)
 #set(SERIAL_DEV usb)
+#set(SERIAL_DEV /dev/cu.usbserial-A96TDJ7N)
+
 # only needed if we do floating point math and want to print floats with printf
 #set(EXTRA_LIBS "-lm -lprintf_flt")
 # show a list of libs linked

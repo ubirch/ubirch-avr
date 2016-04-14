@@ -68,18 +68,8 @@ void setup() {
     Serial.print("RESPONSE LENGTH: ");
     Serial.println(length);
 
-    sim800.expect_AT_OK(F("E1"));
-
-//    while(1) {
-//        Serial.print("shutdown ");
-//        sim800.shutdown();
-//        Serial.println("done");
-//
-//        enableSIM800();
-//        delay(2000);
-//    }
-
-
+    // switch off echo, we do our own
+    sim800.expect_AT_OK(F("E0"));
 
     Serial.println("Entering Console Mode:");
 
@@ -107,8 +97,9 @@ void enableSIM800() {
     }
     sim800.setAPN(F(SIM800_APN), F(SIM800_USER), F(SIM800_PASS));
 
+/*
     Serial.println("SIM800 waiting for network registration...");
-    while (!sim800.registerNetwork()) {
+    while (!sim800.registerNetwork(60000)) {
         sim800.shutdown();
         sim800.wakeup();
     }
@@ -119,11 +110,16 @@ void enableSIM800() {
         while (1);
     }
     Serial.println("SIM800 initialized");
+*/
 }
 
 // read what is available from the serial port and send to modem
 ISR(TIMER1_COMPA_vect) {
-    while (Serial.available() > 0) sim800._serial.write((uint8_t) Serial.read());
+    while (Serial.available() > 0) {
+        uint8_t c = (uint8_t) Serial.read();
+        sim800._serial.write(c);
+        Serial.write(c);
+    }
 }
 
 // the main loop just reads the responses from the modem and

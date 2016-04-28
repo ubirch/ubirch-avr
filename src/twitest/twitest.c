@@ -52,12 +52,15 @@ int main(void) {
     _delay_ms(10);
     PORTB |= _BV(PORTB1);
 
+    DDRB |= _BV(PINB3);
+    PORTB |= _BV(PORTB3);
+
     puts("\n== Two Wire Interface Test");
 
     printf("Scanning for TWI (i2c) devices... (0x%02x - 0x%02x)\n", 0b00000000, 0b0111111);
     for (uint8_t address = 0b00000000; address < 0b01111111; address++) {
         printf("\r        \r0x%02x<", address);
-        i2c_init(I2C_SPEED_400KHZ);
+        i2c_init(I2C_SPEED_50KHZ);
         i2c_start();
         printf("S");
         i2c_write(address << 1);

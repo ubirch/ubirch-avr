@@ -22,10 +22,18 @@
 #ifndef UBIRCH_I2C_REGISTERS_H
 #define UBIRCH_I2C_REGISTERS_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 uint8_t i2c_read_reg(uint8_t addr, uint8_t reg);
 
 uint16_t i2c_read_reg16(uint8_t addr, uint8_t reg);
 
-void i2c_write_reg(uint8_t addr, uint8_t reg, uint8_t data);
+uint8_t i2c_write_reg(uint8_t addr, uint8_t reg, uint8_t data);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif //UBIRCH_I2C_REGISTERS_H

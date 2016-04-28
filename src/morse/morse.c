@@ -91,7 +91,7 @@ int main(void) {
     DDRB |= _BV(PINB5);
     PORTB &= ~_BV(PORTB5);
     prompt("Press Enter to start...");
-    printf("F_CPU=%lu, BAUD=%u, MCU=%s\n", F_CPU, BAUD, MCU);
+    printf("F_CPU=%lu, BAUD=%lu, MCU=%s\n", F_CPU, BAUD, MCU);
 
     static char text[] = "hello world this is ubirch 1 from danmark";
 

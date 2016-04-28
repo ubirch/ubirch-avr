@@ -28,87 +28,73 @@
  */
 
 #include "isl29125.h"
-
-// disable asserts in non-debug code
 #include <i2c.h>
 
-#ifndef NDEBUG
-#   ifdef i2c_assert
-#      undef i2c_assert
-#   endif
-#   define i2c_assert(e, m)
-#endif
-
-void isl_set(uint8_t reg, uint8_t data) {
-    i2c_write_reg(ISL_DEVICE_ADDRESS, reg, data);
+uint8_t isl_set(uint8_t reg, uint8_t data) {
+  return i2c_write_reg(ISL_DEVICE_ADDRESS, reg, data);
 }
 
 uint8_t isl_get(uint8_t reg) {
-    return i2c_read_reg(ISL_DEVICE_ADDRESS, reg);
+  return i2c_read_reg(ISL_DEVICE_ADDRESS, reg);
 }
 
 uint8_t isl_reset(void) {
-    i2c_start();
-    i2c_write(ISL_DEVICE_ADDRESS << 1);
-    i2c_assert(I2C_STATUS_SLAW_ACK, "address error");
-    i2c_write(ISL_R_RESET);
-    i2c_assert(I2C_STATUS_DATA_ACK, "register error");
-    i2c_stop();
+  i2c_write_reg(ISL_DEVICE_ADDRESS, 0x00, ISL_R_RESET);
 
-    if (i2c_read_reg(ISL_DEVICE_ADDRESS, ISL_R_DEVICE_ID) != ISL_DEVICE_ID) return 0;
+  if (i2c_read_reg(ISL_DEVICE_ADDRESS, ISL_R_DEVICE_ID) != ISL_DEVICE_ID) return 0;
 
-    uint8_t check = 0x00;
-    check |= i2c_read_reg(ISL_DEVICE_ADDRESS, ISL_R_COLOR_MODE);
-    check |= i2c_read_reg(ISL_DEVICE_ADDRESS, ISL_R_FILTERING);
-    check |= i2c_read_reg(ISL_DEVICE_ADDRESS, ISL_R_INTERRUPT);
-    check |= i2c_read_reg(ISL_DEVICE_ADDRESS, ISL_R_STATUS);
-    if (check) return 0;
+  uint8_t check = 0x00;
+  check |= i2c_read_reg(ISL_DEVICE_ADDRESS, ISL_R_COLOR_MODE);
+  check |= i2c_read_reg(ISL_DEVICE_ADDRESS, ISL_R_FILTERING);
+  check |= i2c_read_reg(ISL_DEVICE_ADDRESS, ISL_R_INTERRUPT);
+  check |= i2c_read_reg(ISL_DEVICE_ADDRESS, ISL_R_STATUS);
+  if (check != 0) return check;
 
-    return 1;
+  return 1;
 }
 
 uint16_t isl_read_red(void) {
-    return i2c_read_reg16(ISL_DEVICE_ADDRESS, ISL_R_RED_L);
+  return i2c_read_reg16(ISL_DEVICE_ADDRESS, ISL_R_RED_L);
 }
 
 uint16_t isl_read_green(void) {
-    return i2c_read_reg16(ISL_DEVICE_ADDRESS, ISL_R_GREEN_L);
+  return i2c_read_reg16(ISL_DEVICE_ADDRESS, ISL_R_GREEN_L);
 }
 
 uint16_t isl_read_blue(void) {
-    return i2c_read_reg16(ISL_DEVICE_ADDRESS, ISL_R_BLUE_L);
+  return i2c_read_reg16(ISL_DEVICE_ADDRESS, ISL_R_BLUE_L);
 }
 
 static inline uint8_t downsample(uint16_t c) {
-    return c >> ((i2c_read_reg(ISL_DEVICE_ADDRESS, ISL_R_COLOR_MODE) & ISL_MODE_12BIT) ? 4 : 8);
+  return c >> ((i2c_read_reg(ISL_DEVICE_ADDRESS, ISL_R_COLOR_MODE) & ISL_MODE_12BIT) ? 4 : 8);
 }
 
 uint8_t isl_read_red8(void) {
-    return downsample(isl_read_red());
+  return downsample(isl_read_red());
 }
 
 uint8_t isl_read_green8(void) {
-    return downsample(isl_read_green());;
+  return downsample(isl_read_green());;
 }
 
 uint8_t isl_read_blue8(void) {
-    return downsample(isl_read_blue());
+  return downsample(isl_read_blue());
 }
 
 rgb48 isl_read_rgb(void) {
-    rgb48 result = {
-            .red = isl_read_red(),
-            .green = isl_read_green(),
-            .blue = isl_read_blue()
-    };
-    return result;
+  rgb48 result = {
+          .red = isl_read_red(),
+          .green = isl_read_green(),
+          .blue = isl_read_blue()
+  };
+  return result;
 }
 
 rgb24 isl_read_rgb24(void) {
-    rgb24 result = {
-            .red = isl_read_red8(),
-            .green = isl_read_green8(),
-            .blue = isl_read_blue8()
-    };
-    return result;
+  rgb24 result = {
+          .red = isl_read_red8(),
+          .green = isl_read_green8(),
+          .blue = isl_read_blue8()
+  };
+  return result;
 }

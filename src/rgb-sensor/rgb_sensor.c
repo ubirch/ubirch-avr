@@ -48,7 +48,7 @@ int main(void) {
     blink(3);
     prompt("press enter to start:");
 
-    i2c_init(I2C_SPEED_400KHZ);
+    i2c_init(I2C_SPEED_50KHZ);
 
     // reset device
     if (!isl_reset()) {
@@ -56,26 +56,31 @@ int main(void) {
     }
 
     // set sampling mode, ir filter and interrupt mode
-    isl_set(ISL_R_COLOR_MODE, ISL_MODE_RGB | ISL_MODE_10KLUX | ISL_MODE_16BIT);
+    isl_set(ISL_R_COLOR_MODE, ISL_MODE_RGB | ISL_MODE_10KLUX | ISL_MODE_12BIT);
     isl_set(ISL_R_FILTERING, ISL_FILTER_IR_MAX);
     isl_set(ISL_R_INTERRUPT, ISL_INT_ON_THRSLD);
 
     printf("read mode: ");
     uint8_t color_mode = isl_get(ISL_R_COLOR_MODE);
     print_bits(1, &color_mode);
+    puts("");
     printf("read filter: ");
     uint8_t ir_filtering = isl_get(ISL_R_FILTERING);
     print_bits(1, &ir_filtering);
+    puts("");
     printf("read interrupts: ");
     uint8_t intr = isl_get(ISL_R_INTERRUPT);
     print_bits(1, &intr);
+    puts("");
 
     puts("reading RGB values from sensor");
     puts("'%' indicates the chip is still in a conversion cyle, so we wait");
     while (1) {
         // wait for the conversion cycle to be done, this just indicates there is a cycle
         // in progress. the actual r,g,b values are always available from the last cycle
-        while (!(isl_get(ISL_R_STATUS) & ISL_STATUS_ADC_DONE)) putchar('%');
+        for (uint8_t colors = 0; colors < 3; colors++)
+            while (!(isl_get(ISL_R_STATUS) & ISL_STATUS_ADC_DONE))
+                putchar('%');
         puts("");
 
         // read the full 36 or 48 bit color

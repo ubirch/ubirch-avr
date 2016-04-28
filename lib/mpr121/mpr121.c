@@ -61,7 +61,7 @@ uint16_t mpr_baseline(uint8_t pin) {
     return baseline << 2;
 }
 
-void inline mpr_setup(uint16_t bitmask) {
+inline void mpr_setup(uint16_t bitmask) {
     i2c_write_reg(MPR_DEVICE_ADDRESS, MPR_R_ECR, bitmask);
 }
 

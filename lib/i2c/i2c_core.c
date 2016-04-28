@@ -18,7 +18,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <stdio.h>
 #include "i2c_core.h"
 
 void i2c_init(uint8_t speed) {

@@ -23,46 +23,48 @@
 #include "i2c.h"
 
 uint8_t i2c_read_reg(uint8_t addr, uint8_t reg) {
-    i2c_start();
-    i2c_write(addr << 1);
-    i2c_assert(I2C_STATUS_SLAW_ACK, "address error");
-    i2c_write(reg);
-    i2c_assert(I2C_STATUS_DATA_ACK, "device-id error");
+  i2c_start();
+  i2c_write(addr << 1);
+  i2c_assert(I2C_STATUS_SLAW_ACK, "address error");
+  i2c_write(reg);
+  i2c_assert(I2C_STATUS_DATA_ACK, "device-id error");
 
-    i2c_start();
-    i2c_write((addr << 1) | 0x01);
-    i2c_assert(I2C_STATUS_SLAR_ACK, "address error");
-    uint8_t r = i2c_read(false);
-    i2c_assert(I2C_STATUS_RCVD_DATA_NACK, "data receive error");
-    i2c_stop();
+  i2c_start();
+  i2c_write((addr << 1) | 0x01);
+  i2c_assert(I2C_STATUS_SLAR_ACK, "address error");
+  uint8_t r = i2c_read(false);
+  i2c_assert(I2C_STATUS_RCVD_DATA_NACK, "data receive error");
+  i2c_stop();
 
-    return r;
+  return r;
 }
 
 uint16_t i2c_read_reg16(uint8_t addr, uint8_t reg) {
-    i2c_start();
-    i2c_write(addr << 1);
-    i2c_assert(I2C_STATUS_SLAW_ACK, "address error");
-    i2c_write(reg);
-    i2c_assert(I2C_STATUS_DATA_ACK, "device-id error");
+  i2c_start();
+  i2c_write(addr << 1);
+  i2c_assert(I2C_STATUS_SLAW_ACK, "address error");
+  i2c_write(reg);
+  i2c_assert(I2C_STATUS_DATA_ACK, "device-id error");
 
-    i2c_start();
-    i2c_write((addr << 1) | 0x01);
-    i2c_assert(I2C_STATUS_SLAR_ACK, "address error");
-    uint16_t r = i2c_read(true) | (i2c_read(false) << 8);
-    i2c_assert(I2C_STATUS_RCVD_DATA_NACK, "data receive error");
-    i2c_stop();
+  i2c_start();
+  i2c_write((addr << 1) | 0x01);
+  i2c_assert(I2C_STATUS_SLAR_ACK, "address error");
+  uint16_t r = i2c_read(true) | (i2c_read(false) << 8);
+  i2c_assert(I2C_STATUS_RCVD_DATA_NACK, "data receive error");
+  i2c_stop();
 
-    return r;
+  return r;
 }
 
-void i2c_write_reg(uint8_t addr, uint8_t reg, uint8_t data) {
-    i2c_start();
-    i2c_write(addr << 1);
-    i2c_assert(I2C_STATUS_SLAW_ACK, "address error");
-    i2c_write(reg);
-    i2c_assert(I2C_STATUS_DATA_ACK, "register error");
-    i2c_write(data);
-    i2c_assert(I2C_STATUS_DATA_ACK, "value error");
-    i2c_stop();
+uint8_t i2c_write_reg(uint8_t addr, uint8_t reg, uint8_t data) {
+  i2c_start();
+  i2c_write(addr << 1);
+  i2c_assert(I2C_STATUS_SLAW_ACK, "address error");
+  i2c_write(reg);
+  i2c_assert(I2C_STATUS_DATA_ACK, "register error");
+  i2c_write(data);
+  i2c_assert(I2C_STATUS_DATA_ACK, "value error");
+  i2c_stop();
+
+  return 1;
 }

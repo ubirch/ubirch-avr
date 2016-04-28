@@ -114,7 +114,7 @@ void GetRGB() {
     } else {
         // take into account the 0 at the end of strings
         char response_buffer[64] = {0};
-        size_t received_length = sim800h.HTTP_get_read(response_buffer, 0, (size_t) response_length);
+        size_t received_length = sim800h.HTTP_read(response_buffer, 0, (size_t) response_length);
         sim800h.disableGPRS();
         sim800h.shutdown();
 

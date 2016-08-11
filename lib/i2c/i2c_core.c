@@ -53,8 +53,7 @@ void i2c_write(uint8_t b) {
 }
 
 uint8_t i2c_read(bool ack) {
-    TWCR = _BV(TWINT) | _BV(TWEN);
-    if (ack) TWCR |= _BV(TWEA);
+  TWCR = _BV(TWINT) | _BV(TWEN) | (ack ? _BV(TWEA) : 0U);
     while (!(TWCR & _BV(TWINT)));
     return TWDR;
 }

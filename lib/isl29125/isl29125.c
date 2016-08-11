@@ -38,19 +38,10 @@ uint8_t isl_get(uint8_t reg) {
   return i2c_read_reg(ISL_DEVICE_ADDRESS, reg);
 }
 
-uint8_t isl_reset(void) {
+bool isl_reset(void) {
   i2c_write_reg(ISL_DEVICE_ADDRESS, 0x00, ISL_R_RESET);
 
-  if (i2c_read_reg(ISL_DEVICE_ADDRESS, ISL_R_DEVICE_ID) != ISL_DEVICE_ID) return 0;
-
-  uint8_t check = 0x00;
-  check |= i2c_read_reg(ISL_DEVICE_ADDRESS, ISL_R_COLOR_MODE);
-  check |= i2c_read_reg(ISL_DEVICE_ADDRESS, ISL_R_FILTERING);
-  check |= i2c_read_reg(ISL_DEVICE_ADDRESS, ISL_R_INTERRUPT);
-  check |= i2c_read_reg(ISL_DEVICE_ADDRESS, ISL_R_STATUS);
-  if (check != 0) return check;
-
-  return 1;
+  return i2c_read_reg(ISL_DEVICE_ADDRESS, ISL_R_DEVICE_ID) == ISL_DEVICE_ID;
 }
 
 uint16_t isl_read_red(void) {
@@ -65,36 +56,22 @@ uint16_t isl_read_blue(void) {
   return i2c_read_reg16(ISL_DEVICE_ADDRESS, ISL_R_BLUE_L);
 }
 
-static inline uint8_t downsample(uint16_t c) {
-  return c >> ((i2c_read_reg(ISL_DEVICE_ADDRESS, ISL_R_COLOR_MODE) & ISL_MODE_12BIT) ? 4 : 8);
-}
-
-uint8_t isl_read_red8(void) {
-  return downsample(isl_read_red());
-}
-
-uint8_t isl_read_green8(void) {
-  return downsample(isl_read_green());;
-}
-
-uint8_t isl_read_blue8(void) {
-  return downsample(isl_read_blue());
-}
-
 rgb48 isl_read_rgb(void) {
   rgb48 result = {
-          .red = isl_read_red(),
-          .green = isl_read_green(),
-          .blue = isl_read_blue()
+    .red = i2c_read_reg16(ISL_DEVICE_ADDRESS, ISL_R_RED_L),
+    .green = i2c_read_reg16(ISL_DEVICE_ADDRESS, ISL_R_GREEN_L),
+    .blue = i2c_read_reg16(ISL_DEVICE_ADDRESS, ISL_R_BLUE_L)
   };
   return result;
 }
 
 rgb24 isl_read_rgb24(void) {
+  uint8_t shift = ((i2c_read_reg(ISL_DEVICE_ADDRESS, ISL_R_COLOR_MODE) & ISL_MODE_12BIT) ? 4 : 8);
+
   rgb24 result = {
-          .red = isl_read_red8(),
-          .green = isl_read_green8(),
-          .blue = isl_read_blue8()
+    .red = isl_read_red() >> shift,
+    .green = isl_read_green() >> shift,
+    .blue = isl_read_blue() >> shift
   };
   return result;
 }

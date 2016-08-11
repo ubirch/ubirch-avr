@@ -25,6 +25,7 @@
 #define UBIRCH_ISL29125_H
 
 #include <stdint.h>
+#include <stdbool.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -83,7 +84,7 @@ extern "C" {
 // ISL_R_FILTERING values (the actual filter values can be beweel 0x00 (NONE) and 0x3F (MAX)
 #define ISL_FILTER_IR_RANGE 0x80 // default is not capping the values (top & bottom)
 #define ISL_FILTER_IR_NONE  0x00 // no IR filtering (or low)
-#define ISL_FILTER_IR_MAX   0x3F // maximum IR filter
+#define ISL_FILTER_IR_MAX   0xBF // maximum IR filter
 
 // ISL_R_INTERRPT values (how to trigger interrupts, if selected)
 #define ISL_INTERRUPT_NONE  0b000000 // do not trigger interrupts
@@ -140,7 +141,7 @@ uint8_t isl_get(uint8_t reg);
  * Reset the sensor.
  * A non-zero return indicates an error condition.
  */
-uint8_t isl_reset(void);
+bool isl_reset(void);
 
 uint16_t isl_read_red(void);
 
